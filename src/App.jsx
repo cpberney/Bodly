@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   Home, TrendingDown, HeartPulse, UtensilsCrossed, Dumbbell,
   Plus, Minus, Check, Wine, Droplet, Flame, Footprints,
@@ -155,8 +155,12 @@ export default function App() {
     })();
   }, []);
 
+  const dataRef = useRef(data);
+  useEffect(() => { dataRef.current = data; }, [data]);
+
   const save = async (next) => {
     setData(next);
+    dataRef.current = next;
     await storage.set(STORE_KEY, JSON.stringify(next));
   };
 
@@ -315,18 +319,18 @@ const Focus = ({ done, text, onClick, last }) => (
 
 /* --------------------------- WEIGHT ------------------------------ */
 function WeightTab({ data, save }) {
-  const [val, setVal] = useState("");
+  const valRef = useRef(null);
   const goalWeight = +(data.profile.start * (1 - data.profile.goalPct / 100)).toFixed(1);
   const log = [...data.weightLog].sort((a, b) => a.date.localeCompare(b.date));
   const chart = log.map((e) => ({ date: fmtDay(e.date), w: e.weight }));
 
   const add = () => {
-    const w = parseFloat(val);
+    const w = parseFloat(valRef.current?.value);
     if (!w || w < 40 || w > 1000) return;
     const d = todayStr();
     const wl = data.weightLog.filter((e) => e.date !== d).concat({ date: d, weight: w });
     save({ ...data, weightLog: wl, profile: { ...data.profile, current: w } });
-    setVal("");
+    if (valRef.current) valRef.current.value = "";
   };
 
   return (
@@ -334,7 +338,7 @@ function WeightTab({ data, save }) {
       <Card>
         <SectionTitle icon={TrendingDown}>Log Today's Weight</SectionTitle>
         <div style={{ display: "flex", gap: 10 }}>
-          <input value={val} onChange={(e) => setVal(e.target.value)} type="number" placeholder="lbs" style={inputStyle} />
+          <input ref={valRef} type="number" inputMode="decimal" placeholder="lbs" style={inputStyle} />
           <button onClick={add} style={primaryBtn}>Save</button>
         </div>
       </Card>
@@ -379,13 +383,13 @@ function HabitsTab({ data, save }) {
     if (!(data.alcohol[key] > 0)) streak++; else break;
   }
 
-  const [g, setG] = useState("");
+  const gRef = useRef(null);
   const glucose = [...data.glucose].sort((a, b) => a.date.localeCompare(b.date)).slice(-10);
   const addG = () => {
-    const v = parseFloat(g);
+    const v = parseFloat(gRef.current?.value);
     if (!v || v < 40 || v > 500) return;
     save({ ...data, glucose: data.glucose.filter((e) => e.date !== d).concat({ date: d, value: v }) });
-    setG("");
+    if (gRef.current) gRef.current.value = "";
   };
 
   return (
@@ -412,7 +416,7 @@ function HabitsTab({ data, save }) {
       <Card>
         <SectionTitle icon={Droplet} color={C.sky}>Blood Sugar Log</SectionTitle>
         <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
-          <input value={g} onChange={(e) => setG(e.target.value)} type="number" placeholder="mg/dL" style={inputStyle} />
+          <input ref={gRef} type="number" inputMode="decimal" placeholder="mg/dL" style={inputStyle} />
           <button onClick={addG} style={primaryBtn}>Log</button>
         </div>
         {glucose.length === 0 ? (
@@ -716,13 +720,23 @@ function CalmTab({ data, save }) {
 
 /* ---------------------------- SETUP ------------------------------ */
 function Setup({ data, save, close }) {
-  const [name, setName] = useState(data.profile.name || "");
-  const [start, setStart] = useState(data.profile.start || "");
-  const goalW = start ? +(start * 0.8).toFixed(1) : 0;
+  const nameRef = useRef(null);
+  const startRef = useRef(null);
+  const [goalW, setGoalW] = useState(data.profile.start ? +(data.profile.start * 0.8).toFixed(1) : 0);
+
+  const recalc = () => {
+    const s = parseFloat(startRef.current?.value);
+    setGoalW(s ? +(s * 0.8).toFixed(1) : 0);
+  };
 
   const finish = () => {
-    const s = parseFloat(start) || 200;
-    save({ ...data, profile: { ...data.profile, name: name.trim(), start: s, current: data.profile.current || s, goalPct: 20 } });
+    // read straight from the inputs so nothing is lost
+    const typedName = (nameRef.current?.value || "").trim();
+    const s = parseFloat(startRef.current?.value) || 200;
+    save({
+      ...data,
+      profile: { ...data.profile, name: typedName, start: s, current: data.profile.current || s, goalPct: 20 },
+    });
     close();
   };
 
@@ -737,16 +751,18 @@ function Setup({ data, save, close }) {
         <div style={{ color: C.mute, fontSize: 14, marginBottom: 18 }}>Your goal is to lose 20% of your starting weight, gently and sustainably.</div>
 
         <label style={lbl}>Your name</label>
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Alex" style={{ ...inputStyle, marginBottom: 14 }} />
+        <input ref={nameRef} defaultValue={data.profile.name || ""} placeholder="e.g. Alex"
+          autoCapitalize="words" style={{ ...inputStyle, marginBottom: 14 }} />
 
         <label style={lbl}>Starting weight (lbs)</label>
-        <input value={start} onChange={(e) => setStart(e.target.value)} type="number" placeholder="200" style={{ ...inputStyle, marginBottom: 14 }} />
+        <input ref={startRef} defaultValue={data.profile.start || ""} type="number" inputMode="decimal"
+          placeholder="200" onInput={recalc} onChange={recalc} style={{ ...inputStyle, marginBottom: 14 }} />
 
         {goalW > 0 && (
           <div style={{ background: C.card2, borderRadius: 14, padding: 14, marginBottom: 18, textAlign: "center" }}>
             <div style={{ fontSize: 12, color: C.mute }}>Your 20% goal weight</div>
             <div style={{ fontFamily: "Georgia,serif", fontSize: 30, color: C.sage }}>{goalW} lbs</div>
-            <div style={{ fontSize: 12, color: C.sun }}>That's {(start - goalW).toFixed(0)} lbs to lose — you've got this! 💚</div>
+            <div style={{ fontSize: 12, color: C.sun }}>That's {(goalW / 0.8 - goalW).toFixed(0)} lbs to lose — you've got this! 💚</div>
           </div>
         )}
 
