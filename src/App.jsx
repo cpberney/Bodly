@@ -3,7 +3,7 @@ import {
   Home, TrendingDown, HeartPulse, UtensilsCrossed, Dumbbell,
   Plus, Minus, Check, Wine, Droplet, Flame, Footprints,
   ShoppingCart, ChevronRight, Trophy, Sparkles, X, Leaf,
-  GlassWater, Brain, Bell, Play, Pause, RotateCcw
+  GlassWater, Brain, Bell, BellOff, Play, Pause, RotateCcw, CalendarDays, ChevronLeft
 } from "lucide-react";
 import {
   LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, ReferenceLine
@@ -132,6 +132,8 @@ const DEFAULT = {
   workoutsDone: {},
   checked: {},
   meditationLog: {},
+  bellOn: true,
+  dayPlans: {}, // { 'YYYY-MM-DD': { meals: {...}, notes: "" } }
 };
 
 /* ============================ APP ============================ */
@@ -169,7 +171,7 @@ export default function App() {
       <div style={{ background: C.bg, color: C.sage, minHeight: "100vh", display: "grid", placeItems: "center", fontFamily: "Georgia, serif" }}>
         <div style={{ textAlign: "center" }}>
           <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}><Logo size={56} /></div>
-          <div style={{ letterSpacing: 4, fontSize: 22 }}>BODLY</div>
+          <div style={{ letterSpacing: 4, fontSize: 22, fontWeight: 800 }}>BODLY</div>
           <div style={{ fontSize: 13, fontFamily: "sans-serif", color: C.mute, marginTop: 6 }}>Loading your journey…</div>
         </div>
       </div>
@@ -190,6 +192,7 @@ export default function App() {
         {tab === "meals" && <MealsTab data={data} save={save} />}
         {tab === "move" && <MoveTab data={data} save={save} />}
         {tab === "calm" && <CalmTab data={data} save={save} />}
+        {tab === "plan" && <PlanTab data={data} save={save} />}
       </div>
       <NavBar tab={tab} setTab={setTab} />
       {showSetup && <Setup data={data} save={save} close={() => setShowSetup(false)} />}
@@ -203,7 +206,7 @@ function Header({ data }) {
   const greet = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
   return (
     <div style={{ padding: "26px 20px 14px" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, color: C.sage, fontSize: 14, letterSpacing: 3, textTransform: "uppercase" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, color: C.sage, fontSize: 14, letterSpacing: 3, textTransform: "uppercase", fontWeight: 800 }}>
         <Logo size={28} /> Bodly
       </div>
       <div style={{ fontFamily: "Georgia, serif", fontSize: 26, marginTop: 6, lineHeight: 1.15 }}>
@@ -603,7 +606,7 @@ function MoveTab({ data, save }) {
 
 /* -------------------------- BELL SOUND --------------------------- */
 let _bell = null;
-async function playBell() {
+async function playBell(note = "F4") {
   try {
     await Tone.start();
     if (!_bell) {
@@ -614,9 +617,9 @@ async function playBell() {
       }).connect(reverb);
       _bell.volume.value = -6;
     }
+    // a single, clean bell strike on the given note (with a soft octave shimmer)
     const now = Tone.now();
-    _bell.triggerAttackRelease(["C5", "G5"], 3, now);
-    _bell.triggerAttackRelease(["E6"], 3, now + 0.04);
+    _bell.triggerAttackRelease(note, 3, now);
   } catch { /* audio not ready */ }
 }
 
@@ -634,7 +637,7 @@ function CalmTab({ data, save }) {
     if (!running) return;
     if (left <= 0) {
       setRunning(false);
-      playBell();
+      if (data.bellOn !== false) playBell("B4");   // closing bell — key of B
       const d = todayStr();
       const sessions = data.meditationLog || {};
       save({ ...data, meditationLog: { ...sessions, [d]: (sessions[d] || 0) + mins } });
@@ -644,8 +647,13 @@ function CalmTab({ data, save }) {
     return () => clearTimeout(t);
   }, [running, left]); // eslint-disable-line
 
-  const start = async () => { await playBell(); setRunning(true); };
+  const start = async () => {
+    await Tone.start();            // unlock audio on the tap
+    setRunning(true);
+    if (data.bellOn !== false) setTimeout(() => playBell("F4"), 2000);  // opening bell — key of F, 2s after start
+  };
   const reset = () => { setRunning(false); setLeft(mins * 60); };
+  const toggleBell = () => save({ ...data, bellOn: data.bellOn === false });
 
   const total = mins * 60;
   const progress = ((total - left) / total) * 100;
@@ -703,7 +711,14 @@ function CalmTab({ data, save }) {
             <button onClick={() => setRunning(false)} style={{ ...roundBtn, width: 56, height: 56 }}><Pause size={22} /></button>
           )}
           <button onClick={reset} style={{ ...roundBtn, width: 56, height: 56 }}><RotateCcw size={20} /></button>
-          <button onClick={playBell} style={{ ...roundBtn, width: 56, height: 56 }} title="Test bell"><Bell size={20} color={C.sun} /></button>
+          <button onClick={toggleBell} title={data.bellOn === false ? "Bell off" : "Bell on"} style={{
+            ...roundBtn, width: 56, height: 56,
+            borderColor: data.bellOn === false ? C.line : C.sage,
+            color: data.bellOn === false ? C.mute : C.sage,
+          }}>{data.bellOn === false ? <BellOff size={20} /> : <Bell size={20} />}</button>
+        </div>
+        <div style={{ textAlign: "center", fontSize: 12, color: C.mute, marginTop: 10 }}>
+          Bell {data.bellOn === false ? "off" : "on"} — F to begin, B to close
         </div>
       </Card>
 
@@ -715,6 +730,202 @@ function CalmTab({ data, save }) {
         </div>
       </Card>
     </>
+  );
+}
+
+/* ----------------------------- PLAN ------------------------------ */
+const MONTHS = ["January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"];
+const DOW = ["S", "M", "T", "W", "T", "F", "S"];
+
+const keyOf = (y, m, d) =>
+  `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+
+// workout for a given Date (Mon-indexed week)
+const workoutForKey = (k) => {
+  const dt = new Date(k + "T00:00");
+  return WORKOUTS[(dt.getDay() + 6) % 7];
+};
+const mealsForKey = (data, k) => (data.dayPlans?.[k]?.meals) || data.meals;
+
+function PlanTab({ data, save }) {
+  const today = new Date();
+  const [ym, setYm] = useState({ y: today.getFullYear(), m: today.getMonth() });
+  const [openKey, setOpenKey] = useState(null);
+
+  const first = new Date(ym.y, ym.m, 1);
+  const startDow = first.getDay();
+  const days = new Date(ym.y, ym.m + 1, 0).getDate();
+  const todayKey = keyOf(today.getFullYear(), today.getMonth(), today.getDate());
+
+  const cells = [];
+  for (let i = 0; i < startDow; i++) cells.push(null);
+  for (let d = 1; d <= days; d++) cells.push(d);
+
+  const shift = (n) => {
+    let m = ym.m + n, y = ym.y;
+    if (m < 0) { m = 11; y--; } if (m > 11) { m = 0; y++; }
+    setYm({ y, m });
+  };
+
+  return (
+    <>
+      <Card style={{ background: `linear-gradient(135deg,${C.card2},${C.card})` }}>
+        <SectionTitle icon={CalendarDays} color={C.sun}>Your Plan</SectionTitle>
+        <div style={{ color: C.mute, fontSize: 14 }}>
+          Tap any day to see its meals and workout — and customize it ahead of time.
+        </div>
+      </Card>
+
+      <Card>
+        {/* month header */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+          <button onClick={() => shift(-1)} style={{ ...roundBtn, width: 38, height: 38 }}><ChevronLeft size={18} /></button>
+          <div style={{ fontFamily: "Georgia,serif", fontSize: 19 }}>{MONTHS[ym.m]} {ym.y}</div>
+          <button onClick={() => shift(1)} style={{ ...roundBtn, width: 38, height: 38 }}><ChevronRight size={18} /></button>
+        </div>
+
+        {/* weekday labels */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 4, marginBottom: 6 }}>
+          {DOW.map((d, i) => <div key={i} style={{ textAlign: "center", fontSize: 11, color: C.mute }}>{d}</div>)}
+        </div>
+
+        {/* day grid */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 4 }}>
+          {cells.map((d, i) => {
+            if (!d) return <div key={i} />;
+            const k = keyOf(ym.y, ym.m, d);
+            const w = workoutForKey(k);
+            const isToday = k === todayKey;
+            const hasNotes = !!data.dayPlans?.[k]?.notes;
+            const col = focusColor(w.focus);
+            return (
+              <button key={i} onClick={() => setOpenKey(k)} style={{
+                aspectRatio: "1", borderRadius: 12, cursor: "pointer",
+                border: `1px solid ${isToday ? C.sage : C.line}`,
+                background: isToday ? "rgba(143,214,164,.12)" : C.card2,
+                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4,
+                color: C.cream, padding: 0,
+              }}>
+                <span style={{ fontSize: 13, fontWeight: isToday ? 700 : 500, color: isToday ? C.sage : C.cream }}>{d}</span>
+                <span style={{ display: "flex", gap: 3, alignItems: "center" }}>
+                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: col }} />
+                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: C.sageDeep }} />
+                  {hasNotes && <span style={{ width: 6, height: 6, borderRadius: "50%", background: C.sun }} />}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* legend */}
+        <div style={{ display: "flex", gap: 14, justifyContent: "center", marginTop: 14, flexWrap: "wrap", fontSize: 11, color: C.mute }}>
+          <Legend color={C.coral} label="Workout" />
+          <Legend color={C.sageDeep} label="Meals" />
+          <Legend color={C.sun} label="Note" />
+        </div>
+      </Card>
+
+      {openKey && <DayDetail data={data} save={save} dayKey={openKey} close={() => setOpenKey(null)} />}
+    </>
+  );
+}
+
+const Legend = ({ color, label }) => (
+  <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+    <span style={{ width: 8, height: 8, borderRadius: "50%", background: color }} /> {label}
+  </span>
+);
+
+function DayDetail({ data, save, dayKey, close }) {
+  const notesRef = useRef(null);
+  const dt = new Date(dayKey + "T00:00");
+  const pretty = dt.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+  const w = workoutForKey(dayKey);
+  const Ic = w.icon;
+  const col = focusColor(w.focus);
+  const slots = ["Breakfast", "Lunch", "Dinner", "Snack"];
+  const dayMeals = mealsForKey(data, dayKey);
+  const wkey = dayKey + "-" + w.day;
+  const done = !!data.workoutsDone[wkey];
+
+  const setMeal = (slot, id) => {
+    const prev = data.dayPlans?.[dayKey] || {};
+    const meals = { ...(prev.meals || data.meals), [slot]: id };
+    save({ ...data, dayPlans: { ...data.dayPlans, [dayKey]: { ...prev, meals } } });
+  };
+  const toggleWorkout = () =>
+    save({ ...data, workoutsDone: { ...data.workoutsDone, [wkey]: !done } });
+  const saveNotes = () => {
+    const prev = data.dayPlans?.[dayKey] || {};
+    save({ ...data, dayPlans: { ...data.dayPlans, [dayKey]: { ...prev, notes: notesRef.current?.value || "" } } });
+    close();
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(8,14,11,.85)", display: "grid", placeItems: "center", padding: 16, zIndex: 50 }}>
+      <div style={{ background: C.card, border: `1px solid ${C.line}`, borderRadius: 24, padding: 20, width: "100%", maxWidth: 400, maxHeight: "88vh", overflowY: "auto" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
+          <div style={{ fontFamily: "Georgia,serif", fontSize: 20, lineHeight: 1.2 }}>{pretty}</div>
+          <X size={22} color={C.mute} style={{ cursor: "pointer", flexShrink: 0 }} onClick={close} />
+        </div>
+
+        {/* workout */}
+        <div style={{ background: C.card2, borderRadius: 16, padding: 14, marginBottom: 14 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+            <div style={{ width: 36, height: 36, borderRadius: 12, background: col + "26", display: "grid", placeItems: "center" }}>
+              <Ic size={18} color={col} />
+            </div>
+            <div>
+              <div style={{ fontSize: 11, color: C.mute }}>{w.day} · {w.mins} min · {w.focus}</div>
+              <div style={{ fontWeight: 700 }}>{w.title}</div>
+            </div>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 3, marginBottom: 10 }}>
+            {w.moves.map((m, i) => (
+              <div key={i} style={{ fontSize: 12.5, color: C.cream, display: "flex", gap: 7 }}>
+                <span style={{ color: col }}>·</span>{m}
+              </div>
+            ))}
+          </div>
+          <button onClick={toggleWorkout} style={{
+            width: "100%", padding: 9, borderRadius: 10, border: "none", cursor: "pointer", fontWeight: 700, fontSize: 13,
+            background: done ? C.sageDeep : C.card, color: done ? "#fff" : C.cream,
+          }}>{done ? "Completed ✓" : "Mark complete"}</button>
+        </div>
+
+        {/* meals */}
+        {slots.map((slot) => {
+          const meal = MEALS.find((m) => m.id === dayMeals[slot]);
+          const options = MEALS.filter((m) => m.tag === slot);
+          return (
+            <div key={slot} style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 11, color: C.mute, textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>{slot}</div>
+              <div style={{ fontFamily: "Georgia,serif", fontSize: 15, marginBottom: 6 }}>{meal?.name}</div>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {options.map((o) => (
+                  <button key={o.id} onClick={() => setMeal(slot, o.id)} style={{
+                    ...chipBtn, padding: "5px 10px", fontSize: 11,
+                    borderColor: o.id === meal?.id ? C.sage : C.line,
+                    color: o.id === meal?.id ? C.sage : C.mute,
+                  }}>{o.name.split(" ").slice(0, 2).join(" ")}</button>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+
+        {/* notes */}
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 11, color: C.mute, textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>Notes / events</div>
+          <textarea ref={notesRef} defaultValue={data.dayPlans?.[dayKey]?.notes || ""}
+            placeholder="e.g. dinner with friends, doctor visit…" rows={3}
+            style={{ ...inputStyle, resize: "none", lineHeight: 1.4 }} />
+        </div>
+
+        <button onClick={saveNotes} style={{ ...primaryBtn, width: "100%", padding: 13 }}>Save day</button>
+      </div>
+    </div>
   );
 }
 
@@ -735,7 +946,7 @@ function Setup({ data, save, close }) {
     const s = parseFloat(startRef.current?.value) || 200;
     save({
       ...data,
-      profile: { ...data.profile, name: typedName, start: s, current: data.profile.current || s, goalPct: 20 },
+      profile: { ...data.profile, name: typedName, start: s, current: s, goalPct: 20 },
     });
     close();
   };
@@ -744,7 +955,7 @@ function Setup({ data, save, close }) {
     <div style={{ position: "fixed", inset: 0, background: "rgba(8,14,11,.85)", display: "grid", placeItems: "center", padding: 20, zIndex: 50 }}>
       <div style={{ background: C.card, border: `1px solid ${C.line}`, borderRadius: 24, padding: 24, width: "100%", maxWidth: 380 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-          <span style={{ color: C.sage, letterSpacing: 2, fontSize: 13, textTransform: "uppercase", display: "flex", gap: 7, alignItems: "center" }}><Logo size={26} /> Bodly</span>
+          <span style={{ color: C.sage, letterSpacing: 2, fontSize: 13, textTransform: "uppercase", display: "flex", gap: 7, alignItems: "center", fontWeight: 800 }}><Logo size={26} /> Bodly</span>
           <X size={20} color={C.mute} style={{ cursor: "pointer" }} onClick={close} />
         </div>
         <div style={{ fontFamily: "Georgia,serif", fontSize: 24, marginBottom: 4 }}>Let's begin 🌱</div>
@@ -780,12 +991,13 @@ function NavBar({ tab, setTab }) {
     { id: "habits", icon: HeartPulse, label: "Health" },
     { id: "meals", icon: UtensilsCrossed, label: "Meals" },
     { id: "move", icon: Dumbbell, label: "Move" },
+    { id: "plan", icon: CalendarDays, label: "Plan" },
     { id: "calm", icon: Brain, label: "Calm" },
   ];
   return (
     <div style={{
       position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 440,
-      display: "flex", justifyContent: "space-around", padding: "10px 8px 22px",
+      display: "flex", justifyContent: "space-around", padding: "9px 4px 22px",
       background: "rgba(15,26,20,.92)", backdropFilter: "blur(12px)", borderTop: `1px solid ${C.line}`,
     }}>
       {items.map((it) => {
@@ -793,10 +1005,10 @@ function NavBar({ tab, setTab }) {
         return (
           <button key={it.id} onClick={() => setTab(it.id)} style={{
             background: "none", border: "none", cursor: "pointer", display: "flex", flexDirection: "column",
-            alignItems: "center", gap: 4, color: active ? C.sage : C.mute, flex: 1,
+            alignItems: "center", gap: 3, color: active ? C.sage : C.mute, flex: 1, padding: "0 2px",
           }}>
-            <Ic size={20} />
-            <span style={{ fontSize: 9.5, fontWeight: active ? 700 : 500, letterSpacing: .2 }}>{it.label}</span>
+            <Ic size={19} />
+            <span style={{ fontSize: 9, fontWeight: active ? 700 : 500, letterSpacing: .1 }}>{it.label}</span>
           </button>
         );
       })}
