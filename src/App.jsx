@@ -1,9 +1,14 @@
+/*
+ * Bodly — wellness companion app
+ * © 2026 Bodly, LLC. All rights reserved.
+ * Proprietary and confidential. Not for redistribution.
+ */
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   Home, TrendingDown, HeartPulse, UtensilsCrossed, Dumbbell,
   Plus, Minus, Check, Wine, Droplet, Flame, Footprints,
   ShoppingCart, ChevronRight, Trophy, Sparkles, X, Leaf,
-  GlassWater, Brain, Bell, BellOff, Play, Pause, RotateCcw, CalendarDays, ChevronLeft, Sun, Shuffle, ChevronDown
+  GlassWater, Brain, Bell, BellOff, Play, Pause, RotateCcw, CalendarDays, ChevronLeft, Sun, Shuffle, ChevronDown, Settings as SettingsIcon, Moon, Trash2, Share2, MessageSquare
 } from "lucide-react";
 import {
   LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, ReferenceLine
@@ -14,6 +19,8 @@ import * as Tone from "tone";
 /* Same async shape the app expects, backed by the browser so your
    data persists on-device between visits. No account needed. */
 const STORE_KEY = "bodly-data";
+// ⬇️ CHANGE THIS to your email to receive tester feedback
+const FEEDBACK_EMAIL = "you@example.com";
 const storage = {
   async get(key) {
     try {
@@ -27,19 +34,28 @@ const storage = {
 };
 
 /* ----------------------------- THEME ----------------------------- */
-const C = {
-  bg: "#0f1a14",
-  card: "#16241c",
-  card2: "#1d3127",
-  line: "#274536",
-  sage: "#8fd6a4",
-  sageDeep: "#3fae6a",
-  cream: "#f4f1e8",
-  sun: "#f5c451",
-  coral: "#f08a6e",
-  sky: "#7fc4e0",
-  mute: "#8aa394",
+const DARK = {
+  bg: "#0f1a14", card: "#16241c", card2: "#1d3127", line: "#274536",
+  sage: "#8fd6a4", sageDeep: "#3fae6a", cream: "#f4f1e8",
+  sun: "#f5c451", coral: "#f08a6e", sky: "#7fc4e0", mute: "#8aa394",
+  glow1: "#1c3326", tintRose: "#2a1f1c", tintCool: "#142a31",
+  tintWarm: "#2a221c", tintViolet: "#241f31", tintGold: "#2e2718",
+  navBg: "rgba(15,26,20,.92)",
 };
+const LIGHT = {
+  bg: "#eef1ea", card: "#ffffff", card2: "#e8ede5", line: "#d3dcd2",
+  sage: "#2e8b57", sageDeep: "#3fae6a", cream: "#17231b",
+  sun: "#b9810f", coral: "#c75c40", sky: "#2c7fa3", mute: "#5f7268",
+  glow1: "#dfeee4", tintRose: "#f6ece8", tintCool: "#e6f1f5",
+  tintWarm: "#f5efe6", tintViolet: "#efeaf6", tintGold: "#f6efdf",
+  navBg: "rgba(255,255,255,.92)",
+};
+// mutable palette the whole app reads from
+const C = { ...DARK };
+function applyTheme(name) {
+  Object.assign(C, name === "light" ? LIGHT : DARK);
+  rebuildStyles();
+}
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
 const fmtDay = (s) => new Date(s + "T00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" });
@@ -382,6 +398,7 @@ const DEFAULT = {
   bellOn: true,
   shakesOn: false,
   shakeSystems: [], // ["Huel|Black Edition", ...]
+  theme: "dark",
   dayPlans: {}, // { 'YYYY-MM-DD': { meals: {...}, notes: "" } }
 };
 
@@ -391,6 +408,16 @@ export default function App() {
   const [data, setData] = useState(DEFAULT);
   const [loaded, setLoaded] = useState(false);
   const [showSetup, setShowSetup] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [splash, setSplash] = useState(true);
+
+  useEffect(() => {
+    const t = setTimeout(() => setSplash(false), 1900);
+    return () => clearTimeout(t);
+  }, []);
+
+  // apply the active palette before rendering (covers dark/light)
+  applyTheme(data.theme === "light" ? "light" : "dark");
 
   useEffect(() => {
     (async () => {
@@ -415,6 +442,36 @@ export default function App() {
     await storage.set(STORE_KEY, JSON.stringify(next));
   };
 
+  const resetApp = async () => {
+    const fresh = JSON.parse(JSON.stringify(DEFAULT));
+    setData(fresh);
+    dataRef.current = fresh;
+    try { localStorage.removeItem(STORE_KEY); } catch {}
+    setShowSettings(false);
+    setShowSetup(true);
+    setTab("home");
+  };
+
+  if (splash)
+    return (
+      <div style={{
+        background: `radial-gradient(120% 80% at 50% 35%, ${C.glow1} 0%, ${C.bg} 60%)`,
+        color: C.sage, minHeight: "100vh", display: "grid", placeItems: "center",
+        fontFamily: "Georgia, serif",
+      }}>
+        <div style={{ textAlign: "center", animation: "bodlysplash 1.9s ease forwards" }}>
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: 14 }}><Logo size={84} /></div>
+          <div style={{ fontSize: 56, letterSpacing: 10, fontWeight: 800, color: C.sage }}>BODLY</div>
+        </div>
+        <style>{`@keyframes bodlysplash {
+          0% { opacity: 0; transform: scale(.92); }
+          25% { opacity: 1; transform: scale(1); }
+          80% { opacity: 1; }
+          100% { opacity: .0; }
+        }`}</style>
+      </div>
+    );
+
   if (!loaded)
     return (
       <div style={{ background: C.bg, color: C.sage, minHeight: "100vh", display: "grid", placeItems: "center", fontFamily: "Georgia, serif" }}>
@@ -429,11 +486,11 @@ export default function App() {
   return (
     <div style={{
       fontFamily: "'Avenir Next','Segoe UI',system-ui,sans-serif",
-      background: `radial-gradient(120% 80% at 50% -10%, #1c3326 0%, ${C.bg} 55%)`,
+      background: `radial-gradient(120% 80% at 50% -10%, ${C.glow1} 0%, ${C.bg} 55%)`,
       color: C.cream, minHeight: "100vh", maxWidth: 440, margin: "0 auto",
       position: "relative", overflowX: "hidden",
     }}>
-      <Header data={data} />
+      <Header data={data} openSettings={() => setShowSettings(true)} />
       <div style={{ padding: "0 18px 120px" }}>
         {tab === "home" && <HomeTab data={data} save={save} setTab={setTab} openSetup={() => setShowSetup(true)} />}
         {tab === "weight" && <WeightTab data={data} save={save} />}
@@ -446,12 +503,13 @@ export default function App() {
       </div>
       <NavBar tab={tab} setTab={setTab} />
       {showSetup && <Setup data={data} save={save} close={() => setShowSetup(false)} />}
+      {showSettings && <Settings data={data} save={save} reset={resetApp} close={() => setShowSettings(false)} />}
     </div>
   );
 }
 
 /* --------------------------- HEADER ------------------------------ */
-function Header({ data }) {
+function Header({ data, openSettings }) {
   const hour = new Date().getHours();
   const greet = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
   const [taps, setTaps] = useState(0);
@@ -478,16 +536,21 @@ function Header({ data }) {
   return (
     <div style={{ padding: "26px 20px 14px" }}>
       <Confetti go={confetti} />
-      <div style={{ display: "flex", alignItems: "center", gap: 8, color: C.sage, fontSize: 14, letterSpacing: 3, textTransform: "uppercase", fontWeight: 800 }}>
-        <span
-          onClick={onLogoTap}
-          onMouseDown={startPress} onMouseUp={endPress} onMouseLeave={endPress}
-          onTouchStart={startPress} onTouchEnd={endPress}
-          style={{ cursor: "pointer", display: "inline-flex", transition: "transform .2s", transform: wink ? "rotate(-8deg) scale(1.1)" : "none", userSelect: "none" }}
-        >
-          <Logo size={28} />
-        </span>
-        Bodly
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, color: C.sage, fontSize: 14, letterSpacing: 3, textTransform: "uppercase", fontWeight: 800 }}>
+          <span
+            onClick={onLogoTap}
+            onMouseDown={startPress} onMouseUp={endPress} onMouseLeave={endPress}
+            onTouchStart={startPress} onTouchEnd={endPress}
+            style={{ cursor: "pointer", display: "inline-flex", transition: "transform .2s", transform: wink ? "rotate(-8deg) scale(1.1)" : "none", userSelect: "none" }}
+          >
+            <Logo size={28} />
+          </span>
+          Bodly
+        </div>
+        <button onClick={openSettings} aria-label="Settings" style={{
+          background: "none", border: "none", cursor: "pointer", color: C.mute, padding: 4, display: "flex",
+        }}><SettingsIcon size={22} /></button>
       </div>
       <div style={{ fontFamily: "Georgia, serif", fontSize: 26, marginTop: 6, lineHeight: 1.15 }}>
         {greet}{data.profile.name ? `, ${data.profile.name}` : ""}.
@@ -614,8 +677,9 @@ function HomeTab({ data, save, setTab, openSetup }) {
       </Card>
 
       <div style={{ fontSize: 11, color: C.mute, textAlign: "center", lineHeight: 1.6, padding: "4px 14px" }}>
-        Bodly supports healthy habits but isn't medical advice. For prediabetes and weight goals,
-        please partner with your doctor — especially before big changes. 💚
+        Bodly supports healthy habits but is <b>not medical advice</b>. Always consult your doctor —
+        especially regarding prediabetes, alcohol, and significant weight change.
+        <div style={{ marginTop: 6 }}>© 2026 Bodly, LLC. All rights reserved.</div>
       </div>
     </>
   );
@@ -657,6 +721,8 @@ function WeightTab({ data, save }) {
   const goalWeight = +(data.profile.start * (1 - data.profile.goalPct / 100)).toFixed(1);
   const log = [...data.weightLog].sort((a, b) => a.date.localeCompare(b.date));
   const chart = log.map((e) => ({ date: fmtDay(e.date), w: e.weight }));
+  const latest = log.length ? log[log.length - 1].weight : data.profile.current;
+  const sinceStart = +(data.profile.start - latest).toFixed(1);
 
   const add = () => {
     const w = parseFloat(valRef.current?.value);
@@ -665,6 +731,12 @@ function WeightTab({ data, save }) {
     const wl = data.weightLog.filter((e) => e.date !== d).concat({ date: d, weight: w });
     save({ ...data, weightLog: wl, profile: { ...data.profile, current: w } });
     if (valRef.current) valRef.current.value = "";
+  };
+
+  const removeEntry = (date) => {
+    const wl = data.weightLog.filter((e) => e.date !== date);
+    const newCurrent = wl.length ? [...wl].sort((a, b) => a.date.localeCompare(b.date)).slice(-1)[0].weight : data.profile.start;
+    save({ ...data, weightLog: wl, profile: { ...data.profile, current: newCurrent } });
   };
 
   return (
@@ -677,11 +749,29 @@ function WeightTab({ data, save }) {
         </div>
       </Card>
 
+      {/* current weight summary — gives immediate feedback after logging */}
+      <Card style={{ background: `linear-gradient(135deg,${C.card2},${C.card})` }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div>
+            <div style={{ fontSize: 12, color: C.mute, textTransform: "uppercase", letterSpacing: 1 }}>Current</div>
+            <div style={{ fontFamily: "Georgia,serif", fontSize: 34, color: C.sage }}>{latest} <span style={{ fontSize: 16, color: C.mute }}>lbs</span></div>
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <div style={{ fontSize: 12, color: C.mute, textTransform: "uppercase", letterSpacing: 1 }}>Since start</div>
+            <div style={{ fontFamily: "Georgia,serif", fontSize: 26, color: sinceStart > 0 ? C.sun : C.mute }}>
+              {sinceStart > 0 ? "−" : ""}{Math.abs(sinceStart)} lbs
+            </div>
+          </div>
+        </div>
+      </Card>
+
       <Card>
         <SectionTitle icon={Sparkles} color={C.sky}>Your Trend</SectionTitle>
         {chart.length < 2 ? (
-          <div style={{ color: C.mute, fontSize: 14, textAlign: "center", padding: "24px 0" }}>
-            Log a few days to see your beautiful downward trend. 📉
+          <div style={{ color: C.mute, fontSize: 14, textAlign: "center", padding: "18px 0" }}>
+            {chart.length === 1
+              ? "First weigh-in logged! 🎉 Log again tomorrow to start your trend line. 📉"
+              : "Log a few days to see your beautiful downward trend. 📉"}
           </div>
         ) : (
           <div style={{ height: 200 }}>
@@ -700,6 +790,24 @@ function WeightTab({ data, save }) {
           A steady 1–2 lbs per week is the healthy, lasting pace. 🌱
         </div>
       </Card>
+
+      {/* weigh-in history */}
+      {log.length > 0 && (
+        <Card>
+          <SectionTitle icon={TrendingDown} color={C.sage}>Weigh-in History</SectionTitle>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {[...log].reverse().map((e) => (
+              <div key={e.date} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 12px", background: C.card2, borderRadius: 12 }}>
+                <span style={{ color: C.mute, fontSize: 13 }}>{fmtDay(e.date)}</span>
+                <span style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <span style={{ fontWeight: 700, color: C.sage }}>{e.weight} lbs</span>
+                  <X size={16} color={C.mute} style={{ cursor: "pointer" }} onClick={() => removeEntry(e.date)} />
+                </span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
     </>
   );
 }
@@ -728,7 +836,7 @@ function HabitsTab({ data, save }) {
 
   return (
     <>
-      <Card style={{ background: `linear-gradient(135deg,#2a1f1c,${C.card})` }}>
+      <Card style={{ background: `linear-gradient(135deg,${C.tintRose},${C.card})` }}>
         <SectionTitle icon={Wine} color={C.coral}>Alcohol — Today</SectionTitle>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 22, padding: "8px 0" }}>
           <button onClick={() => setDrinks(drinks - 1)} style={roundBtn}><Minus size={20} /></button>
@@ -739,7 +847,7 @@ function HabitsTab({ data, save }) {
           <button onClick={() => setDrinks(drinks + 1)} style={roundBtn}><Plus size={20} /></button>
         </div>
         <div style={{
-          background: streak >= 7 ? "linear-gradient(135deg,#3a2c10," + C.card2 + ")" : C.card2,
+          background: streak >= 7 ? `linear-gradient(135deg,${C.tintGold},${C.card2})` : C.card2,
           borderRadius: 14, padding: "12px 14px", display: "flex", alignItems: "center", gap: 10, marginTop: 6,
           border: streak >= 7 ? `1px solid ${C.sun}` : "none",
         }}>
@@ -799,7 +907,7 @@ function WaterCard({ data, save }) {
   const pct = Math.min(100, (cups / WATER_GOAL) * 100);
 
   return (
-    <Card style={{ background: `linear-gradient(135deg,#142a31,${C.card})` }}>
+    <Card style={{ background: `linear-gradient(135deg,${C.tintCool},${C.card})` }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <SectionTitle icon={GlassWater} color={C.sky}>Hydration</SectionTitle>
         <span style={{ fontSize: 13, color: C.mute }}>{cups}/{WATER_GOAL} glasses</span>
@@ -1065,7 +1173,7 @@ function MoveTab({ data, save }) {
 
   return (
     <>
-      <Card style={{ background: `linear-gradient(135deg,#2a221c,${C.card})` }}>
+      <Card style={{ background: `linear-gradient(135deg,${C.tintWarm},${C.card})` }}>
         <SectionTitle icon={Dumbbell} color={C.coral}>Your Weekly Plan</SectionTitle>
         <div style={{ color: C.mute, fontSize: 14 }}>
           A balanced mix of cardio, strength, and recovery — adapted to your setup
@@ -1262,7 +1370,7 @@ function CalmTab({ data, save }) {
           <style>{`@keyframes bodlyfade { from {opacity:0} to {opacity:1} }`}</style>
         </div>
       )}
-      <Card style={{ background: `linear-gradient(135deg,#241f31,${C.card})` }}>
+      <Card style={{ background: `linear-gradient(135deg,${C.tintViolet},${C.card})` }}>
         <SectionTitle icon={Brain} color={C.sky}>Meditation</SectionTitle>
         <div style={{ color: C.mute, fontSize: 14 }}>
           A bell chimes to open and close your sit. Settle in, breathe, and let the day soften. 🔔
@@ -1577,7 +1685,7 @@ function FeelsTab({ data, save }) {
 
   return (
     <>
-      <Card style={{ background: `linear-gradient(135deg,#2e2718,${C.card})` }}>
+      <Card style={{ background: `linear-gradient(135deg,${C.tintGold},${C.card})` }}>
         <SectionTitle icon={Sun} color={C.sun}>Feels</SectionTitle>
         <div style={{ color: C.mute, fontSize: 14 }}>
           {isNewYear
@@ -1603,6 +1711,126 @@ function FeelsTab({ data, save }) {
         A fresh set appears each day — tap for more anytime.
       </div>
     </>
+  );
+}
+
+/* --------------------------- SETTINGS ---------------------------- */
+function Settings({ data, save, reset, close }) {
+  const [confirmReset, setConfirmReset] = useState(false);
+  const isLight = data.theme === "light";
+  const setTheme = (t) => save({ ...data, theme: t });
+
+  const shareApp = async () => {
+    const url = window.location.href;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: "Bodly", text: "Try Bodly — my wellness app!", url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        alert("Link copied! Paste it to share Bodly.");
+      }
+    } catch { /* user cancelled */ }
+  };
+
+  const sendFeedback = () => {
+    const subject = encodeURIComponent("Bodly feedback");
+    const body = encodeURIComponent("What I liked:\n\nWhat could be better:\n\nAny bugs / Easter eggs found:\n");
+    window.location.href = `mailto:${FEEDBACK_EMAIL}?subject=${subject}&body=${body}`;
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(8,14,11,.8)", display: "grid", placeItems: "center", padding: 20, zIndex: 55 }}>
+      <div style={{ background: C.card, border: `1px solid ${C.line}`, borderRadius: 24, padding: 22, width: "100%", maxWidth: 380 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 17, fontWeight: 700 }}>
+            <SettingsIcon size={19} color={C.sage} /> Settings
+          </span>
+          <X size={22} color={C.mute} style={{ cursor: "pointer" }} onClick={close} />
+        </div>
+
+        {/* theme */}
+        <div style={{ fontSize: 12, color: C.mute, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>Appearance</div>
+        <div style={{ display: "flex", gap: 10, marginBottom: 22 }}>
+          <button onClick={() => setTheme("dark")} style={{
+            ...chipBtn, flex: 1, padding: "12px", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+            borderColor: !isLight ? C.sage : C.line, color: !isLight ? C.sage : C.mute,
+          }}><Moon size={16} /> Dark</button>
+          <button onClick={() => setTheme("light")} style={{
+            ...chipBtn, flex: 1, padding: "12px", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+            borderColor: isLight ? C.sage : C.line, color: isLight ? C.sage : C.mute,
+          }}><Sun size={16} /> Light</button>
+        </div>
+
+        {/* reset */}
+        <div style={{ fontSize: 12, color: C.mute, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>Data</div>
+        {!confirmReset ? (
+          <button onClick={() => setConfirmReset(true)} style={{
+            width: "100%", padding: 13, borderRadius: 12, cursor: "pointer", fontWeight: 700, fontSize: 14,
+            background: "transparent", border: `1px solid ${C.coral}`, color: C.coral,
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+          }}><Trash2 size={16} /> Reset app</button>
+        ) : (
+          <div style={{ background: C.card2, borderRadius: 14, padding: 14 }}>
+            <div style={{ fontSize: 13, color: C.cream, marginBottom: 12, lineHeight: 1.45 }}>
+              This erases <b>everything</b> — your weight log, habits, meals, and settings — and starts fresh. This can't be undone.
+            </div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button onClick={() => setConfirmReset(false)} style={{ ...ghostBtn, flex: 1, padding: "11px", fontSize: 14 }}>Cancel</button>
+              <button onClick={reset} style={{
+                flex: 1, padding: "11px", borderRadius: 12, border: "none", cursor: "pointer", fontWeight: 700, fontSize: 14,
+                background: C.coral, color: "#fff",
+              }}>Erase everything</button>
+            </div>
+          </div>
+        )}
+
+        <div style={{ fontSize: 12, color: C.mute, textTransform: "uppercase", letterSpacing: 1, margin: "22px 0 8px" }}>Share & feedback</div>
+        <div style={{ display: "flex", gap: 10 }}>
+          <button onClick={shareApp} style={{
+            ...chipBtn, flex: 1, padding: "12px", fontSize: 14, color: C.cream,
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+          }}><Share2 size={16} color={C.sage} /> Share</button>
+          <button onClick={sendFeedback} style={{
+            ...chipBtn, flex: 1, padding: "12px", fontSize: 14, color: C.cream,
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+          }}><MessageSquare size={16} color={C.sky} /> Feedback</button>
+        </div>
+
+        <div style={{ fontSize: 12, color: C.mute, textTransform: "uppercase", letterSpacing: 1, margin: "22px 0 8px" }}>About & legal</div>
+        <div style={{ background: C.card2, borderRadius: 14, padding: 14, maxHeight: 200, overflowY: "auto" }}>
+          <div style={{ fontSize: 11.5, color: C.mute, lineHeight: 1.55 }}>
+            <b style={{ color: C.cream }}>Health disclaimer.</b> Bodly is a general wellness and
+            self-tracking tool for informational purposes only. It is <b>not medical advice</b> and
+            is not a substitute for professional diagnosis, treatment, or the guidance of a qualified
+            healthcare provider. The meal ideas, exercise plans, hydration and fasting targets,
+            blood-sugar references, and alcohol tracking are general information, not personalized
+            medical recommendations. Always consult your physician before starting any diet, exercise,
+            or weight-loss program, changing alcohol intake, or acting on anything in this app —
+            particularly if you have prediabetes, diabetes, or any medical condition, are pregnant or
+            nursing, or take medication. If you think you may have a medical emergency, call your
+            doctor or emergency services immediately. Reliance on any information provided by Bodly is
+            solely at your own risk.
+            <div style={{ marginTop: 8 }}>
+              <b style={{ color: C.cream }}>No warranty / limitation of liability.</b> Bodly is
+              provided "as is," without warranties of any kind. To the fullest extent permitted by law,
+              Bodly, LLC disclaims all liability for any loss or injury arising from use of the app.
+            </div>
+            <div style={{ marginTop: 8 }}>
+              <b style={{ color: C.cream }}>Privacy.</b> Your entries are stored only on your own
+              device and are not transmitted to or collected by Bodly, LLC.
+            </div>
+            <div style={{ marginTop: 8, color: C.cream }}>© 2026 Bodly, LLC. All rights reserved.</div>
+            <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${C.line}`, fontStyle: "italic" }}>
+              A note from the creator: this is just one guy's idea of how to be healthy. He's not a
+              doctor and never will be — Bodly is simply what worked for him. Use what helps, leave
+              what doesn't, and please talk to a real doctor who knows you before making changes. 🌿
+            </div>
+          </div>
+        </div>
+
+        <div style={{ fontSize: 11, color: C.mute, textAlign: "center", marginTop: 18 }}>Bodly · made with care 🌿</div>
+      </div>
+    </div>
   );
 }
 
@@ -1676,7 +1904,7 @@ function NavBar({ tab, setTab }) {
     <div style={{
       position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 440,
       display: "flex", justifyContent: "space-around", padding: "9px 2px 22px",
-      background: "rgba(15,26,20,.92)", backdropFilter: "blur(12px)", borderTop: `1px solid ${C.line}`,
+      background: C.navBg, backdropFilter: "blur(12px)", borderTop: `1px solid ${C.line}`,
     }}>
       {items.map((it) => {
         const Ic = it.icon; const active = tab === it.id;
@@ -1695,9 +1923,13 @@ function NavBar({ tab, setTab }) {
 }
 
 /* ---------------------------- STYLES ----------------------------- */
-const inputStyle = { flex: 1, background: C.card2, border: `1px solid ${C.line}`, borderRadius: 12, padding: "12px 14px", color: C.cream, fontSize: 16, outline: "none", width: "100%" };
-const primaryBtn = { background: `linear-gradient(135deg,${C.sageDeep},${C.sage})`, color: "#08130c", border: "none", borderRadius: 12, padding: "0 20px", fontWeight: 800, fontSize: 15, cursor: "pointer" };
-const ghostBtn = { background: "transparent", border: `1px solid ${C.line}`, color: C.mute, borderRadius: 10, padding: "5px 12px", fontSize: 12, cursor: "pointer" };
-const roundBtn = { width: 48, height: 48, borderRadius: "50%", background: C.card2, border: `1px solid ${C.line}`, color: C.cream, cursor: "pointer", display: "grid", placeItems: "center" };
-const chipBtn = { background: "transparent", border: `1px solid ${C.line}`, borderRadius: 20, padding: "7px 12px", fontSize: 12, cursor: "pointer" };
-const lbl = { display: "block", fontSize: 12, color: C.mute, marginBottom: 6, letterSpacing: .5 };
+let inputStyle, primaryBtn, ghostBtn, roundBtn, chipBtn, lbl;
+function rebuildStyles() {
+  inputStyle = { flex: 1, background: C.card2, border: `1px solid ${C.line}`, borderRadius: 12, padding: "12px 14px", color: C.cream, fontSize: 16, outline: "none", width: "100%" };
+  primaryBtn = { background: `linear-gradient(135deg,${C.sageDeep},${C.sage})`, color: "#08130c", border: "none", borderRadius: 12, padding: "0 20px", fontWeight: 800, fontSize: 15, cursor: "pointer" };
+  ghostBtn = { background: "transparent", border: `1px solid ${C.line}`, color: C.mute, borderRadius: 10, padding: "5px 12px", fontSize: 12, cursor: "pointer" };
+  roundBtn = { width: 48, height: 48, borderRadius: "50%", background: C.card2, border: `1px solid ${C.line}`, color: C.cream, cursor: "pointer", display: "grid", placeItems: "center" };
+  chipBtn = { background: "transparent", border: `1px solid ${C.line}`, borderRadius: 20, padding: "7px 12px", fontSize: 12, cursor: "pointer" };
+  lbl = { display: "block", fontSize: 12, color: C.mute, marginBottom: 6, letterSpacing: .5 };
+}
+rebuildStyles();
