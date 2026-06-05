@@ -3,7 +3,7 @@ import {
   Home, TrendingDown, HeartPulse, UtensilsCrossed, Dumbbell,
   Plus, Minus, Check, Wine, Droplet, Flame, Footprints,
   ShoppingCart, ChevronRight, Trophy, Sparkles, X, Leaf,
-  GlassWater, Brain, Bell, BellOff, Play, Pause, RotateCcw, CalendarDays, ChevronLeft, Sun, Shuffle
+  GlassWater, Brain, Bell, BellOff, Play, Pause, RotateCcw, CalendarDays, ChevronLeft, Sun, Shuffle, ChevronDown
 } from "lucide-react";
 import {
   LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, ReferenceLine
@@ -177,23 +177,51 @@ const MEALS = [
   { id: "s15", name: "Celery & Peanut Butter", tag: "Snack", glyc: "Low GI",
     why: "Crunchy fiber with satisfying healthy fat.",
     items: ["Celery", "Peanut butter"] },
-
-  /* ---------------- SHAKES (shown only when toggle is on) ---------------- */
-  { id: "sk1", name: "AG1 Greens Shake", tag: "Breakfast", glyc: "Low GI", shake: true,
-    why: "A quick greens + vitamins start when mornings are busy.",
-    items: ["AG1 scoop", "Cold water or unsweetened almond milk"] },
-  { id: "sk2", name: "Huel Complete Shake", tag: "Snack", glyc: "Low GI", shake: true,
-    why: "A balanced meal-replacement when you're on the go.",
-    items: ["Huel powder", "Water", "Ice"] },
-  { id: "sk3", name: "Huel Black Edition Shake", tag: "Lunch", glyc: "Low GI", shake: true,
-    why: "Higher-protein, lower-carb meal replacement.",
-    items: ["Huel Black powder", "Water", "Ice"] },
-  { id: "sk4", name: "Protein & Greens Smoothie", tag: "Breakfast", glyc: "Low GI", shake: true,
-    why: "Homemade shake: protein, greens, and good fats.",
-    items: ["Protein powder", "Spinach", "Unsweetened almond milk", "Nut butter", "Ice"] },
 ];
 
 const SHAKE_SLOTS = ["Breakfast", "Lunch", "Snack"]; // where a shake can land
+
+/* Popular meal-replacement systems and their varieties (for the dropdown). */
+const SHAKE_SYSTEMS = [
+  { brand: "Huel", varieties: ["Powder v3.1", "Black Edition", "Ready-to-Drink", "Daily Greens"] },
+  { brand: "AG1", varieties: ["Original Greens"] },
+  { brand: "Soylent", varieties: ["Complete Meal Shake", "Complete Protein"] },
+  { brand: "Ka'Chava", varieties: ["Chocolate", "Vanilla", "Matcha"] },
+  { brand: "Owyn", varieties: ["Pro Elite", "Complete Nutrition"] },
+  { brand: "Orgain", varieties: ["Organic Meal", "Protein Powder"] },
+  { brand: "Garden of Life", varieties: ["Raw Organic Meal"] },
+  { brand: "Vega", varieties: ["One All-in-One", "Protein"] },
+  { brand: "SlimFast", varieties: ["Original Shake", "Advanced Energy"] },
+  { brand: "Homemade", varieties: ["Protein & Greens Smoothie"] },
+];
+
+// build a meal-like object for a selected "Brand|Variety" key
+const shakeMealFromKey = (key) => {
+  const [brand, variety] = key.split("|");
+  const homemade = brand === "Homemade";
+  const base = variety && variety !== brand ? `${brand} ${variety}` : brand;
+  const name = /shake|smoothie|drink/i.test(base) ? base : base + " Shake";
+  return {
+    id: "shake:" + key, name, tag: "Snack", glyc: "Low GI", shake: true,
+    why: homemade
+      ? "Your homemade blend — protein, greens, and good fats."
+      : "Your chosen meal-replacement — quick, balanced nutrition for busy days.",
+    items: homemade
+      ? ["Protein powder", "Spinach", "Unsweetened almond milk", "Nut butter", "Ice"]
+      : [base, "Water or unsweetened milk", "Ice"],
+  };
+};
+const shakeMeals = (data) => (data.shakeSystems || []).map(shakeMealFromKey);
+
+// all selectable options for a slot (adds shakes to shake-slots when toggle is on)
+const optionsForSlot = (data, slot) => {
+  const base = MEALS.filter((m) => m.tag === slot && !m.shake);
+  if (data.shakesOn && SHAKE_SLOTS.includes(slot)) return [...base, ...shakeMeals(data)];
+  return base;
+};
+// find a meal by id across the fixed library and the user's shakes
+const findMeal = (data, id) =>
+  MEALS.find((m) => m.id === id) || shakeMeals(data).find((m) => m.id === id);
 
 /* ------------------------- EXERCISE PLANS -------------------------- */
 /* Three variants per day, chosen by the user's equipment:
@@ -353,6 +381,7 @@ const DEFAULT = {
   meditationLog: {},
   bellOn: true,
   shakesOn: false,
+  shakeSystems: [], // ["Huel|Black Edition", ...]
   dayPlans: {}, // { 'YYYY-MM-DD': { meals: {...}, notes: "" } }
 };
 
@@ -709,64 +738,92 @@ function WaterCard({ data, save }) {
 function MealsTab({ data, save }) {
   const slots = ["Breakfast", "Lunch", "Dinner", "Snack"];
   const shakesOn = !!data.shakesOn;
+  const systems = data.shakeSystems || [];
 
   const setMeal = (slot, id) => save({ ...data, meals: { ...data.meals, [slot]: id } });
 
-  // does the current plan already include a shake somewhere today?
-  const hasShakeToday = slots.some((s) => MEALS.find((m) => m.id === data.meals[s])?.shake);
+  const hasShakeToday = slots.some((s) => findMeal(data, data.meals[s])?.shake);
+
+  // place one of the user's shakes into a sensible slot
+  const injectShake = (meals, dataWithSystems) => {
+    const shakes = shakeMeals(dataWithSystems);
+    if (!shakes.length) return meals;
+    for (const slot of SHAKE_SLOTS) { meals[slot] = shakes[0].id; return meals; }
+    return meals;
+  };
 
   const toggleShakes = () => {
     const on = !shakesOn;
     let meals = { ...data.meals };
-    if (on && !slots.some((s) => MEALS.find((m) => m.id === meals[s])?.shake)) {
-      // turning on: drop a shake into the first sensible slot so there's at least one a day
-      for (const slot of SHAKE_SLOTS) {
-        const shake = MEALS.find((m) => m.shake && m.tag === slot);
-        if (shake) { meals[slot] = shake.id; break; }
-      }
+    let next = { ...data, shakesOn: on };
+    if (on && systems.length && !slots.some((s) => findMeal(next, meals[s])?.shake)) {
+      meals = injectShake(meals, next);
     }
     if (!on) {
-      // turning off: replace any shake picks with a non-shake option in that slot
       slots.forEach((slot) => {
-        const cur = MEALS.find((m) => m.id === meals[slot]);
-        if (cur?.shake) {
+        if (findMeal(data, meals[slot])?.shake) {
           const alt = MEALS.find((m) => m.tag === slot && !m.shake);
           if (alt) meals[slot] = alt.id;
         }
       });
     }
-    save({ ...data, shakesOn: on, meals });
+    save({ ...next, meals });
+  };
+
+  const toggleSystem = (key) => {
+    const has = systems.includes(key);
+    const nextSystems = has ? systems.filter((s) => s !== key) : [...systems, key];
+    let meals = { ...data.meals };
+    let next = { ...data, shakeSystems: nextSystems, shakesOn: true };
+    // if a shake is currently selected but its system was just removed, swap it out
+    slots.forEach((slot) => {
+      const cur = meals[slot];
+      if (cur?.startsWith("shake:") && !nextSystems.includes(cur.slice(6))) {
+        const alt = MEALS.find((m) => m.tag === slot && !m.shake);
+        if (alt) meals[slot] = alt.id;
+      }
+    });
+    // ensure at least one shake is in the day once a system is chosen
+    if (nextSystems.length && !slots.some((s) => findMeal(next, meals[s])?.shake)) {
+      meals = injectShake(meals, next);
+    }
+    save({ ...next, meals });
   };
 
   const shoppingItems = useMemo(() => {
     const set = new Set();
     slots.forEach((s) => {
-      const m = MEALS.find((x) => x.id === data.meals[s]);
+      const m = findMeal(data, data.meals[s]);
       if (m) m.items.forEach((i) => set.add(i));
     });
     return [...set].sort();
-  }, [data.meals]);
+  }, [data.meals, data.shakeSystems]);
 
   const toggle = (item) => save({ ...data, checked: { ...data.checked, [item]: !data.checked[item] } });
 
   return (
     <>
-      {/* shake toggle */}
+      {/* shake toggle + brand picker */}
       <Card style={{ background: `linear-gradient(135deg,${C.card2},${C.card})` }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 15, fontWeight: 700 }}>Meal-replacement shakes</div>
             <div style={{ fontSize: 12.5, color: C.mute, marginTop: 2 }}>
-              Include shakes like AG1 or Huel as options — we'll keep at least one in your day.
+              Pick the systems you use — we'll keep at least one in your day.
             </div>
           </div>
           <Switch on={shakesOn} onClick={toggleShakes} />
         </div>
+        {shakesOn && (
+          <div style={{ marginTop: 14 }}>
+            <ShakePicker systems={systems} onToggle={toggleSystem} />
+          </div>
+        )}
       </Card>
 
       {slots.map((slot) => {
-        const meal = MEALS.find((m) => m.id === data.meals[slot]);
-        const options = MEALS.filter((m) => m.tag === slot && (shakesOn || !m.shake));
+        const meal = findMeal(data, data.meals[slot]);
+        const options = optionsForSlot(data, slot);
         return (
           <Card key={slot}>
             <SectionTitle icon={UtensilsCrossed}>{slot}</SectionTitle>
@@ -788,9 +845,9 @@ function MealsTab({ data, save }) {
         );
       })}
 
-      {shakesOn && !hasShakeToday && (
+      {shakesOn && systems.length === 0 && (
         <div style={{ fontSize: 12, color: C.sun, textAlign: "center", marginBottom: 14 }}>
-          Tip: pick a 🥤 shake in any slot to include one today.
+          Choose a shake system above to add it to your day.
         </div>
       )}
 
@@ -809,6 +866,62 @@ function MealsTab({ data, save }) {
         </div>
       </Card>
     </>
+  );
+}
+
+/* dropdown to choose meal-replacement systems & varieties */
+function ShakePicker({ systems, onToggle }) {
+  const [open, setOpen] = useState(false);
+  const count = systems.length;
+  return (
+    <div>
+      <button onClick={() => setOpen((o) => !o)} style={{
+        width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
+        background: C.card2, border: `1px solid ${C.line}`, borderRadius: 12, padding: "11px 14px",
+        color: C.cream, cursor: "pointer", fontSize: 14,
+      }}>
+        <span>{count ? `${count} system${count > 1 ? "s" : ""} selected` : "Choose your shake systems"}</span>
+        <ChevronDown size={18} color={C.mute} style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform .2s" }} />
+      </button>
+
+      {/* selected chips */}
+      {count > 0 && (
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10 }}>
+          {systems.map((k) => {
+            const [brand, variety] = k.split("|");
+            return (
+              <span key={k} onClick={() => onToggle(k)} style={{
+                display: "flex", alignItems: "center", gap: 6, background: C.sky + "22", color: C.sky,
+                borderRadius: 16, padding: "5px 10px", fontSize: 12, cursor: "pointer",
+              }}>🥤 {brand}{variety && variety !== brand ? ` · ${variety}` : ""} <X size={13} /></span>
+            );
+          })}
+        </div>
+      )}
+
+      {/* expandable list */}
+      {open && (
+        <div style={{ marginTop: 10, border: `1px solid ${C.line}`, borderRadius: 12, overflow: "hidden" }}>
+          {SHAKE_SYSTEMS.map((sys) => (
+            <div key={sys.brand} style={{ borderBottom: `1px solid ${C.line}` }}>
+              <div style={{ padding: "10px 14px 4px", fontSize: 12, color: C.mute, textTransform: "uppercase", letterSpacing: 1 }}>{sys.brand}</div>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", padding: "0 12px 12px" }}>
+                {sys.varieties.map((v) => {
+                  const key = `${sys.brand}|${v}`;
+                  const on = systems.includes(key);
+                  return (
+                    <button key={key} onClick={() => onToggle(key)} style={{
+                      ...chipBtn, padding: "6px 11px", fontSize: 12,
+                      borderColor: on ? C.sky : C.line, color: on ? C.sky : C.mute,
+                    }}>{on ? "✓ " : ""}{v}</button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -1088,7 +1201,32 @@ const workoutForKey = (k, profile) => {
   const dt = new Date(k + "T00:00");
   return planFor(profile)[(dt.getDay() + 6) % 7];
 };
-const mealsForKey = (data, k) => (data.dayPlans?.[k]?.meals) || data.meals;
+// auto-rotate a different meal per slot for each date (stable per day),
+// unless the user has customized that specific day. Respects the shake toggle.
+const rotatedMeals = (data, k) => {
+  const dt = new Date(k + "T00:00");
+  const dayNum = Math.floor(dt.getTime() / 86400000);
+  const shakesOn = !!data.shakesOn;
+  const slots = ["Breakfast", "Lunch", "Dinner", "Snack"];
+  const out = {};
+  slots.forEach((slot, si) => {
+    const pool = MEALS.filter((m) => m.tag === slot); // rotate among the fixed dishes
+    const idx = pool.length ? ((dayNum + si * 3) % pool.length + pool.length) % pool.length : 0;
+    out[slot] = pool[idx]?.id;
+  });
+  // ensure at least one of the user's chosen shakes per day when the toggle is on
+  const shakes = shakeMeals(data);
+  if (shakesOn && shakes.length && !slots.some((s) => findMeal(data, out[s])?.shake)) {
+    const slot = SHAKE_SLOTS[dayNum % SHAKE_SLOTS.length];
+    out[slot] = shakes[((dayNum % shakes.length) + shakes.length) % shakes.length].id;
+  }
+  return out;
+};
+const mealsForKey = (data, k) => {
+  if (data.dayPlans?.[k]?.meals) return data.dayPlans[k].meals; // user-customized day
+  if (k === todayStr()) return data.meals;                       // today matches Meals tab
+  return rotatedMeals(data, k);                                  // other days auto-vary
+};
 
 function PlanTab({ data, save }) {
   const today = new Date();
@@ -1194,7 +1332,7 @@ function DayDetail({ data, save, dayKey, close }) {
 
   const setMeal = (slot, id) => {
     const prev = data.dayPlans?.[dayKey] || {};
-    const meals = { ...(prev.meals || data.meals), [slot]: id };
+    const meals = { ...dayMeals, ...(prev.meals || {}), [slot]: id };
     save({ ...data, dayPlans: { ...data.dayPlans, [dayKey]: { ...prev, meals } } });
   };
   const toggleWorkout = () =>
@@ -1243,8 +1381,8 @@ function DayDetail({ data, save, dayKey, close }) {
 
         {/* meals */}
         {slots.map((slot) => {
-          const meal = MEALS.find((m) => m.id === dayMeals[slot]);
-          const options = MEALS.filter((m) => m.tag === slot && (data.shakesOn || !m.shake));
+          const meal = findMeal(data, dayMeals[slot]);
+          const options = optionsForSlot(data, slot);
           return (
             <div key={slot} style={{ marginBottom: 12 }}>
               <div style={{ fontSize: 11, color: C.mute, textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>{slot}</div>
