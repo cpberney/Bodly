@@ -229,9 +229,37 @@ const shakeMealFromKey = (key) => {
 };
 const shakeMeals = (data) => (data.shakeSystems || []).map(shakeMealFromKey);
 
-// all selectable options for a slot (adds shakes to shake-slots when toggle is on)
+/* Diet compatibility by meal id (kept separate so the meal objects stay tidy). */
+const DIET_OPTIONS = [
+  { id: "all", label: "All" },
+  { id: "lowcarb", label: "Low-carb" },
+  { id: "vegan", label: "Vegan" },
+  { id: "paleo", label: "Paleo" },
+  { id: "mediterranean", label: "Mediterranean" },
+];
+const MEAL_DIETS = {
+  // breakfast
+  m1: ["lowcarb", "mediterranean"], m2: ["lowcarb", "mediterranean"],
+  b3: ["vegan", "mediterranean"], b4: ["mediterranean"], b5: ["lowcarb", "mediterranean"],
+  b6: ["lowcarb", "paleo", "mediterranean"], b7: ["lowcarb", "mediterranean"], b8: ["vegan", "mediterranean"],
+  // lunch
+  m3: ["vegan", "mediterranean"], m4: ["mediterranean"], l5: ["mediterranean"], l6: ["mediterranean"],
+  l7: ["mediterranean"], l8: ["mediterranean"], l9: ["lowcarb", "paleo"], l10: ["lowcarb", "paleo", "mediterranean"],
+  // dinner
+  m5: ["paleo", "mediterranean"], m6: ["mediterranean"], m7: ["vegan"],
+  d8: ["lowcarb", "paleo", "mediterranean"], d9: ["lowcarb", "paleo", "mediterranean"],
+  d10: ["lowcarb", "paleo", "mediterranean"], d11: ["lowcarb"], d12: ["mediterranean"], d13: ["vegan", "mediterranean"],
+  // snack
+  m8: ["vegan", "paleo", "mediterranean"], m9: ["vegan", "mediterranean"], s10: ["lowcarb", "mediterranean"],
+  s11: ["lowcarb", "paleo", "mediterranean"], s12: ["vegan", "lowcarb"], s13: ["lowcarb"],
+  s14: ["lowcarb", "mediterranean"], s15: ["vegan", "lowcarb"],
+};
+const dietOk = (meal, diet) =>
+  !diet || diet === "all" || meal.shake || (MEAL_DIETS[meal.id] || []).includes(diet);
+
+// all selectable options for a slot (diet-filtered; adds shakes to shake-slots when on)
 const optionsForSlot = (data, slot) => {
-  const base = MEALS.filter((m) => m.tag === slot && !m.shake);
+  const base = MEALS.filter((m) => m.tag === slot && !m.shake && dietOk(m, data.diet));
   if (data.shakesOn && SHAKE_SLOTS.includes(slot)) return [...base, ...shakeMeals(data)];
   return base;
 };
@@ -398,6 +426,8 @@ const DEFAULT = {
   bellOn: true,
   shakesOn: false,
   shakeSystems: [], // ["Huel|Black Edition", ...]
+  people: 2, // how many are eating (scales shopping quantities)
+  diet: "all", // all | lowcarb | vegan | paleo | mediterranean
   theme: "dark",
   dayPlans: {}, // { 'YYYY-MM-DD': { meals: {...}, notes: "" } }
 };
@@ -457,11 +487,11 @@ export default function App() {
       <div style={{
         background: `radial-gradient(120% 80% at 50% 35%, ${C.glow1} 0%, ${C.bg} 60%)`,
         color: C.sage, minHeight: "100vh", display: "grid", placeItems: "center",
-        fontFamily: "Georgia, serif",
+        fontFamily: "'Avenir Next','Segoe UI',system-ui,sans-serif",
       }}>
         <div style={{ textAlign: "center", animation: "bodlysplash 1.9s ease forwards" }}>
           <div style={{ display: "flex", justifyContent: "center", marginBottom: 14 }}><Logo size={84} /></div>
-          <div style={{ fontSize: 56, letterSpacing: 10, fontWeight: 800, color: C.sage }}>BODLY</div>
+          <div style={{ fontFamily: "'Avenir Next','Segoe UI',system-ui,sans-serif", fontSize: 56, letterSpacing: 10, fontWeight: 800, textTransform: "uppercase", color: C.sage }}>BODLY</div>
         </div>
         <style>{`@keyframes bodlysplash {
           0% { opacity: 0; transform: scale(.92); }
@@ -477,7 +507,7 @@ export default function App() {
       <div style={{ background: C.bg, color: C.sage, minHeight: "100vh", display: "grid", placeItems: "center", fontFamily: "Georgia, serif" }}>
         <div style={{ textAlign: "center" }}>
           <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}><Logo size={56} /></div>
-          <div style={{ letterSpacing: 4, fontSize: 22, fontWeight: 800 }}>BODLY</div>
+          <div style={{ fontFamily: "'Avenir Next','Segoe UI',system-ui,sans-serif", letterSpacing: 4, fontSize: 22, fontWeight: 800 }}>BODLY</div>
           <div style={{ fontSize: 13, fontFamily: "sans-serif", color: C.mute, marginTop: 6 }}>Loading your journey…</div>
         </div>
       </div>
@@ -998,16 +1028,53 @@ function MealsTab({ data, save }) {
     save({ ...next, meals });
   };
 
-  const shoppingItems = useMemo(() => {
-    const set = new Set();
-    slots.forEach((s) => {
-      const m = findMeal(data, data.meals[s]);
-      if (m) m.items.forEach((i) => set.add(i));
-    });
-    return [...set].sort();
-  }, [data.meals, data.shakeSystems]);
+  const people = data.people || 2;
+  const diet = data.diet || "all";
 
-  const toggle = (item) => save({ ...data, checked: { ...data.checked, [item]: !data.checked[item] } });
+  const setDiet = (d) => {
+    // switch diet and make sure each slot's meal is compatible
+    const meals = { ...data.meals };
+    const next = { ...data, diet: d };
+    slots.forEach((slot) => {
+      const cur = findMeal(next, meals[slot]);
+      if (cur && !dietOk(cur, d)) {
+        const alt = optionsForSlot(next, slot).find((m) => !m.shake);
+        if (alt) meals[slot] = alt.id;
+      }
+    });
+    save({ ...next, meals });
+  };
+
+  // Build two shopping trips from the actual planned meals of the next 7 days.
+  // Trip 1 = next 3 days, Trip 2 = following 4 days. Quantities scale by people.
+  const trips = useMemo(() => {
+    const dayKeys = [];
+    const base = new Date(todayStr() + "T00:00");
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(base); d.setDate(d.getDate() + i);
+      dayKeys.push(d.toISOString().slice(0, 10));
+    }
+    const itemsFor = (keys) => {
+      const set = new Set();
+      keys.forEach((k) => {
+        const meals = mealsForKey(data, k);
+        slots.forEach((s) => {
+          const m = findMeal(data, meals[s]);
+          if (m) m.items.forEach((i) => set.add(i));
+        });
+      });
+      // show a ×N multiplier when buying for more than one person
+      return [...set].sort().map((name) => ({ name, label: people > 1 ? `${name}  ×${people}` : name }));
+    };
+    const span = (keys) => `${fmtDay(keys[0])} – ${fmtDay(keys[keys.length - 1])}`;
+    const t1 = dayKeys.slice(0, 3), t2 = dayKeys.slice(3, 7);
+    return [
+      { id: "trip1", label: "Trip 1 · next 3 days", span: span(t1), items: itemsFor(t1) },
+      { id: "trip2", label: "Trip 2 · following 4 days", span: span(t2), items: itemsFor(t2) },
+    ];
+  }, [data.meals, data.shakeSystems, data.dayPlans, data.shakesOn, people]);
+
+  const toggle = (key) => save({ ...data, checked: { ...data.checked, [key]: !data.checked[key] } });
 
   return (
     <>
@@ -1059,20 +1126,68 @@ function MealsTab({ data, save }) {
         </div>
       )}
 
-      <Card style={{ background: `linear-gradient(135deg,${C.card2},${C.card})` }}>
-        <SectionTitle icon={ShoppingCart} color={C.sun}>Shopping List</SectionTitle>
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          {shoppingItems.map((item) => (
-            <div key={item} onClick={() => toggle(item)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "9px 0", cursor: "pointer" }}>
-              <div style={{
-                width: 20, height: 20, borderRadius: 6, display: "grid", placeItems: "center",
-                background: data.checked[item] ? C.sageDeep : "transparent", border: `1.5px solid ${data.checked[item] ? C.sageDeep : C.mute}`,
-              }}>{data.checked[item] && <Check size={13} color="#fff" />}</div>
-              <span style={{ fontSize: 14, textDecoration: data.checked[item] ? "line-through" : "none", color: data.checked[item] ? C.mute : C.cream }}>{item}</span>
-            </div>
+      {/* diet preference */}
+      <Card>
+        <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 2 }}>Diet</div>
+        <div style={{ fontSize: 12.5, color: C.mute, marginBottom: 12 }}>Filters meals to fit how you eat.</div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {DIET_OPTIONS.map((d) => (
+            <button key={d.id} onClick={() => setDiet(d.id)} style={{
+              ...chipBtn, padding: "8px 13px",
+              borderColor: diet === d.id ? C.sage : C.line, color: diet === d.id ? C.sage : C.mute,
+            }}>{d.label}</button>
           ))}
         </div>
       </Card>
+
+      {/* who's eating — scales shopping quantities */}
+      <Card>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 700 }}>Cooking for</div>
+            <div style={{ fontSize: 12.5, color: C.mute, marginTop: 2 }}>Scales your shopping quantities.</div>
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            {[1, 2, 4].map((n) => (
+              <button key={n} onClick={() => save({ ...data, people: n })} style={{
+                ...chipBtn, padding: "9px 15px", fontSize: 15, fontWeight: 700,
+                borderColor: people === n ? C.sage : C.line, color: people === n ? C.sage : C.mute,
+              }}>{n}</button>
+            ))}
+          </div>
+        </div>
+      </Card>
+
+      <div style={{ fontSize: 12, color: C.mute, textAlign: "center", margin: "2px 0 10px", letterSpacing: 1, textTransform: "uppercase" }}>
+        Shopping — two trips this week{people > 1 ? ` · for ${people}` : ""}
+      </div>
+      {trips.map((trip) => {
+        const doneCount = trip.items.filter((it) => data.checked[`${trip.id}:${it.name}`]).length;
+        return (
+          <Card key={trip.id} style={{ background: `linear-gradient(135deg,${C.card2},${C.card})` }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <SectionTitle icon={ShoppingCart} color={C.sun}>{trip.label}</SectionTitle>
+              <span style={{ fontSize: 12, color: C.mute }}>{doneCount}/{trip.items.length}</span>
+            </div>
+            <div style={{ fontSize: 12, color: C.mute, marginTop: -6, marginBottom: 10 }}>{trip.span}</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              {trip.items.map((item) => {
+                const key = `${trip.id}:${item.name}`;
+                const checked = !!data.checked[key];
+                return (
+                  <div key={key} onClick={() => toggle(key)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "9px 0", cursor: "pointer" }}>
+                    <div style={{
+                      width: 20, height: 20, borderRadius: 6, display: "grid", placeItems: "center",
+                      background: checked ? C.sageDeep : "transparent", border: `1.5px solid ${checked ? C.sageDeep : C.mute}`,
+                    }}>{checked && <Check size={13} color="#fff" />}</div>
+                    <span style={{ fontSize: 14, textDecoration: checked ? "line-through" : "none", color: checked ? C.mute : C.cream }}>{item.label}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+        );
+      })}
     </>
   );
 }
@@ -1460,7 +1575,7 @@ const rotatedMeals = (data, k) => {
   const slots = ["Breakfast", "Lunch", "Dinner", "Snack"];
   const out = {};
   slots.forEach((slot, si) => {
-    const pool = MEALS.filter((m) => m.tag === slot); // rotate among the fixed dishes
+    const pool = MEALS.filter((m) => m.tag === slot && dietOk(m, data.diet)); // diet-filtered rotation
     const idx = pool.length ? ((dayNum + si * 3) % pool.length + pool.length) % pool.length : 0;
     out[slot] = pool[idx]?.id;
   });
