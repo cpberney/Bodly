@@ -454,15 +454,96 @@ export default function App() {
 function Header({ data }) {
   const hour = new Date().getHours();
   const greet = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  const [taps, setTaps] = useState(0);
+  const [confetti, setConfetti] = useState(false);
+  const [fact, setFact] = useState("");
+  const [wink, setWink] = useState(false);
+  const pressTimer = useRef(null);
+
+  const onLogoTap = () => {
+    const n = taps + 1;
+    setTaps(n);
+    if (n >= 5) {
+      setTaps(0);
+      setConfetti(true);
+      setFact(FUN_FACTS[Math.floor(Math.random() * FUN_FACTS.length)]);
+      setTimeout(() => setConfetti(false), 2200);
+      setTimeout(() => setFact(""), 6000);
+    }
+  };
+  // long-press → Vitruvian wink (little arm wave)
+  const startPress = () => { pressTimer.current = setTimeout(() => setWink(true), 550); };
+  const endPress = () => { clearTimeout(pressTimer.current); if (wink) setTimeout(() => setWink(false), 900); };
+
   return (
     <div style={{ padding: "26px 20px 14px" }}>
+      <Confetti go={confetti} />
       <div style={{ display: "flex", alignItems: "center", gap: 8, color: C.sage, fontSize: 14, letterSpacing: 3, textTransform: "uppercase", fontWeight: 800 }}>
-        <Logo size={28} /> Bodly
+        <span
+          onClick={onLogoTap}
+          onMouseDown={startPress} onMouseUp={endPress} onMouseLeave={endPress}
+          onTouchStart={startPress} onTouchEnd={endPress}
+          style={{ cursor: "pointer", display: "inline-flex", transition: "transform .2s", transform: wink ? "rotate(-8deg) scale(1.1)" : "none", userSelect: "none" }}
+        >
+          <Logo size={28} />
+        </span>
+        Bodly
       </div>
       <div style={{ fontFamily: "Georgia, serif", fontSize: 26, marginTop: 6, lineHeight: 1.15 }}>
         {greet}{data.profile.name ? `, ${data.profile.name}` : ""}.
       </div>
       <div style={{ color: C.mute, fontSize: 14, marginTop: 2 }}>One steady step at a time. 🌿</div>
+      {fact && (
+        <div style={{
+          marginTop: 12, background: C.card2, border: `1px solid ${C.sun}`, borderRadius: 14, padding: "12px 14px",
+          fontSize: 13, color: C.sun, animation: "bodlyfade .4s ease",
+        }}>
+          <span style={{ fontWeight: 700 }}>🥚 You found a secret!</span> {fact}
+          <style>{`@keyframes bodlyfade { from { opacity: 0; transform: translateY(-6px);} to {opacity:1; transform:none;} }`}</style>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ---------------------- EASTER EGGS ------------------------------ */
+const FUN_FACTS = [
+  "Da Vinci's Vitruvian Man is ~500 years old — and still doing push-ups. 💪",
+  "Drinking water can give your metabolism a tiny temporary boost. 💧",
+  "Muscle burns more calories at rest than fat does. 🔥",
+  "Laughing for 15 minutes can burn up to 40 calories. 😄",
+  "Your body has enough iron to make a small nail. 🔩",
+  "Walking after meals can blunt blood-sugar spikes. 🚶",
+  "Strong legs are linked to a sharper brain as we age. 🧠",
+  "It takes ~12 muscles to smile. Go ahead, try one. 🙂",
+  "Cold water can wake you up better than you'd think. ❄️",
+  "Consistency beats intensity — you're proof. 🌱",
+];
+
+function Confetti({ go }) {
+  if (!go) return null;
+  const bits = Array.from({ length: 28 });
+  const colors = [C.sage, C.sun, C.coral, C.sky, C.sageDeep];
+  return (
+    <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 60, overflow: "hidden" }}>
+      {bits.map((_, i) => {
+        const left = Math.random() * 100;
+        const delay = Math.random() * 0.3;
+        const dur = 1.1 + Math.random() * 0.8;
+        const size = 6 + Math.random() * 8;
+        const col = colors[i % colors.length];
+        return (
+          <div key={i} style={{
+            position: "absolute", top: "-20px", left: left + "%", width: size, height: size,
+            background: col, borderRadius: i % 2 ? "50%" : 2,
+            animation: `bodlyfall ${dur}s ${delay}s ease-in forwards`,
+          }} />
+        );
+      })}
+      <style>{`@keyframes bodlyfall {
+        0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+        100% { transform: translateY(100vh) rotate(540deg); opacity: 0; }
+      }`}</style>
     </div>
   );
 }
@@ -657,12 +738,22 @@ function HabitsTab({ data, save }) {
           </div>
           <button onClick={() => setDrinks(drinks + 1)} style={roundBtn}><Plus size={20} /></button>
         </div>
-        <div style={{ background: C.card2, borderRadius: 14, padding: "12px 14px", display: "flex", alignItems: "center", gap: 10, marginTop: 6 }}>
+        <div style={{
+          background: streak >= 7 ? "linear-gradient(135deg,#3a2c10," + C.card2 + ")" : C.card2,
+          borderRadius: 14, padding: "12px 14px", display: "flex", alignItems: "center", gap: 10, marginTop: 6,
+          border: streak >= 7 ? `1px solid ${C.sun}` : "none",
+        }}>
           <Flame size={20} color={C.sun} />
-          <div>
+          <div style={{ flex: 1 }}>
             <div style={{ fontSize: 20, fontWeight: 700, color: C.sun }}>{streak} day{streak === 1 ? "" : "s"}</div>
             <div style={{ fontSize: 12, color: C.mute }}>alcohol-free streak</div>
           </div>
+          {streak >= 7 && (
+            <span style={{
+              background: C.sun, color: "#2a1f08", fontWeight: 800, fontSize: 12, padding: "6px 12px",
+              borderRadius: 20, letterSpacing: .5, boxShadow: `0 0 14px ${C.sun}66`,
+            }}>🔥 ON FIRE</span>
+          )}
         </div>
       </Card>
 
@@ -729,7 +820,16 @@ function WaterCard({ data, save }) {
         <button onClick={() => set(cups - 1)} style={{ ...ghostBtn, flex: 1, padding: "9px" }}>− Remove</button>
         <button onClick={() => set(cups + 1)} style={{ ...primaryBtn, flex: 1, padding: "9px" }}>+ Add glass</button>
       </div>
-      {cups >= WATER_GOAL && <div style={{ textAlign: "center", color: C.sky, fontSize: 13, marginTop: 10 }}>Goal reached — beautifully hydrated! 💧</div>}
+      {cups >= WATER_GOAL && cups < 12 && <div style={{ textAlign: "center", color: C.sky, fontSize: 13, marginTop: 10 }}>Goal reached — beautifully hydrated! 💧</div>}
+      {cups >= 12 && (
+        <div style={{ textAlign: "center", marginTop: 12 }}>
+          <div style={{ fontSize: 22, letterSpacing: 2, animation: "bodlywave 1.2s ease-in-out infinite" }}>🌊🌊🌊</div>
+          <div style={{ color: C.sky, fontSize: 13, marginTop: 4, fontWeight: 700 }}>
+            Whoa — Aquaman mode! 🐟 You're a hydration legend.
+          </div>
+          <style>{`@keyframes bodlywave { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }`}</style>
+        </div>
+      )}
     </Card>
   );
 }
@@ -1078,6 +1178,23 @@ async function playBell(note = "F4") {
   } catch { /* audio not ready */ }
 }
 
+// special triad chord for the 20-min "zen" Easter egg
+async function playZenChord() {
+  try {
+    await Tone.start();
+    if (!_bell) {
+      const reverb = new Tone.Reverb({ decay: 4, wet: 0.5 }).toDestination();
+      _bell = new Tone.PolySynth(Tone.Synth, {
+        oscillator: { type: "sine" },
+        envelope: { attack: 0.004, decay: 2.4, sustain: 0, release: 2.6 },
+      }).connect(reverb);
+      _bell.volume.value = -6;
+    }
+    const now = Tone.now();
+    _bell.triggerAttackRelease(["C4", "E4", "G4", "C5"], 5, now);
+  } catch { /* audio not ready */ }
+}
+
 /* ---------------------------- CALM ------------------------------- */
 const DURATIONS = [3, 5, 10, 15, 20];
 
@@ -1085,6 +1202,7 @@ function CalmTab({ data, save }) {
   const [mins, setMins] = useState(5);
   const [left, setLeft] = useState(5 * 60);
   const [running, setRunning] = useState(false);
+  const [zen, setZen] = useState(false);
 
   useEffect(() => { if (!running) setLeft(mins * 60); }, [mins, running]);
 
@@ -1092,9 +1210,16 @@ function CalmTab({ data, save }) {
     if (!running) return;
     if (left <= 0) {
       setRunning(false);
-      if (data.bellOn !== false) playBell("B4");   // closing bell — key of B
       const d = todayStr();
       const sessions = data.meditationLog || {};
+      // Easter egg: a full 20-min sit earns a special chord + quiet message
+      if (mins >= 20) {
+        if (data.bellOn !== false) playZenChord();
+        setZen(true);
+        setTimeout(() => setZen(false), 7000);
+      } else if (data.bellOn !== false) {
+        playBell("B4");   // closing bell — key of B
+      }
       save({ ...data, meditationLog: { ...sessions, [d]: (sessions[d] || 0) + mins } });
       return;
     }
@@ -1120,6 +1245,23 @@ function CalmTab({ data, save }) {
 
   return (
     <>
+      {zen && (
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 60, display: "grid", placeItems: "center",
+          background: "rgba(8,14,11,.92)", animation: "bodlyfade 1s ease",
+        }} onClick={() => setZen(false)}>
+          <div style={{ textAlign: "center", padding: 30 }}>
+            <div style={{ fontSize: 40, marginBottom: 14 }}>🧘</div>
+            <div style={{ fontFamily: "Georgia,serif", fontSize: 24, color: C.sky, lineHeight: 1.4 }}>
+              Stillness found.
+            </div>
+            <div style={{ color: C.mute, fontSize: 14, marginTop: 10, maxWidth: 260 }}>
+              Twenty minutes of presence is a gift. The calm you just made travels with you. 🌌
+            </div>
+          </div>
+          <style>{`@keyframes bodlyfade { from {opacity:0} to {opacity:1} }`}</style>
+        </div>
+      )}
       <Card style={{ background: `linear-gradient(135deg,#241f31,${C.card})` }}>
         <SectionTitle icon={Brain} color={C.sky}>Meditation</SectionTitle>
         <div style={{ color: C.mute, fontSize: 14 }}>
@@ -1420,7 +1562,15 @@ function FeelsTab({ data, save }) {
   const dayNum = Math.floor(new Date(today + "T00:00").getTime() / 86400000);
   const feels = data.feels && data.feels.date === today ? data.feels : { date: today, n: 0 };
   const seed = dayNum + feels.n * 7919;
-  const list = pickFive(seed);
+  const isNewYear = today.slice(5) === "01-01"; // MM-DD
+  const NEW_YEAR = [
+    "New year, same strong me — just leveling up. 🎉",
+    "This is my year to feel my absolute best.",
+    "I carry every win from last year forward.",
+    "Fresh start, steady habits, big heart.",
+    "I am writing a healthier story, one day at a time.",
+  ];
+  const list = isNewYear ? NEW_YEAR : pickFive(seed);
   const shuffle = () => save({ ...data, feels: { date: today, n: feels.n + 1 } });
 
   const dateLabel = new Date(today + "T00:00").toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
@@ -1430,7 +1580,9 @@ function FeelsTab({ data, save }) {
       <Card style={{ background: `linear-gradient(135deg,#2e2718,${C.card})` }}>
         <SectionTitle icon={Sun} color={C.sun}>Feels</SectionTitle>
         <div style={{ color: C.mute, fontSize: 14 }}>
-          Five affirmations for {dateLabel}. Read them slowly, say them aloud, and let them land. 🌞
+          {isNewYear
+            ? "Happy New Year! 🎆 A special set of affirmations to start your year strong."
+            : `Five affirmations for ${dateLabel}. Read them slowly, say them aloud, and let them land. 🌞`}
         </div>
       </Card>
 
