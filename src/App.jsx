@@ -3,7 +3,7 @@ import {
   Home, TrendingDown, HeartPulse, UtensilsCrossed, Dumbbell,
   Plus, Minus, Check, Wine, Droplet, Flame, Footprints,
   ShoppingCart, ChevronRight, Trophy, Sparkles, X, Leaf,
-  GlassWater, Brain, Bell, BellOff, Play, Pause, RotateCcw, CalendarDays, ChevronLeft
+  GlassWater, Brain, Bell, BellOff, Play, Pause, RotateCcw, CalendarDays, ChevronLeft, Sun, Shuffle
 } from "lucide-react";
 import {
   LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, ReferenceLine
@@ -71,18 +71,59 @@ function Logo({ size = 34, color = C.sage }) {
 
 /* --------------------------- MEAL LIBRARY -------------------------- */
 const MEALS = [
+  /* ---------------- BREAKFAST ---------------- */
   { id: "m1", name: "Greek Yogurt & Berry Bowl", tag: "Breakfast", glyc: "Low GI",
     why: "Protein + fiber keeps blood sugar steady all morning.",
     items: ["Plain Greek yogurt", "Mixed berries", "Chia seeds", "Walnuts", "Cinnamon"] },
   { id: "m2", name: "Veggie & Feta Omelette", tag: "Breakfast", glyc: "Low GI",
     why: "High protein, near-zero impact on glucose.",
     items: ["Eggs", "Spinach", "Bell pepper", "Feta cheese", "Olive oil"] },
+  { id: "b3", name: "Overnight Oats & Chia", tag: "Breakfast", glyc: "Low GI",
+    why: "Slow-release oats with chia keep you full for hours.",
+    items: ["Rolled oats", "Chia seeds", "Unsweetened almond milk", "Blueberries", "Cinnamon"] },
+  { id: "b4", name: "Avocado & Egg Toast", tag: "Breakfast", glyc: "Med GI",
+    why: "Whole-grain + healthy fat blunts the glucose rise.",
+    items: ["Whole-grain bread", "Avocado", "Eggs", "Chili flakes", "Lemon"] },
+  { id: "b5", name: "Cottage Cheese & Tomato Bowl", tag: "Breakfast", glyc: "Low GI",
+    why: "High-protein, low-carb, very gentle on blood sugar.",
+    items: ["Cottage cheese", "Cherry tomatoes", "Cucumber", "Black pepper", "Olive oil"] },
+  { id: "b6", name: "Spinach & Mushroom Scramble", tag: "Breakfast", glyc: "Low GI",
+    why: "Veg-packed protein to start the day strong.",
+    items: ["Eggs", "Spinach", "Mushrooms", "Onion", "Olive oil"] },
+  { id: "b7", name: "Smoked Salmon & Cream Cheese", tag: "Breakfast", glyc: "Low GI",
+    why: "Omega-3s and protein with barely any carbs.",
+    items: ["Smoked salmon", "Cream cheese", "Whole-grain crackers", "Capers", "Red onion"] },
+  { id: "b8", name: "Peanut Butter Banana Oatmeal", tag: "Breakfast", glyc: "Med GI",
+    why: "Fiber + fat slows the banana's natural sugars.",
+    items: ["Rolled oats", "Peanut butter", "Banana", "Unsweetened almond milk", "Cinnamon"] },
+
+  /* ---------------- LUNCH ---------------- */
   { id: "m3", name: "Lentil & Roasted Veg Salad", tag: "Lunch", glyc: "Low GI",
     why: "Lentils slow digestion and are great for prediabetes.",
     items: ["Green lentils", "Cherry tomatoes", "Cucumber", "Red onion", "Lemon", "Olive oil", "Parsley"] },
   { id: "m4", name: "Grilled Chicken & Quinoa Bowl", tag: "Lunch", glyc: "Med GI",
     why: "Lean protein with a whole-grain that won't spike you.",
     items: ["Chicken breast", "Quinoa", "Broccoli", "Avocado", "Garlic", "Lemon"] },
+  { id: "l5", name: "Tuna & White Bean Salad", tag: "Lunch", glyc: "Low GI",
+    why: "Protein + fiber combo that keeps energy level.",
+    items: ["Canned tuna", "Cannellini beans", "Arugula", "Red onion", "Lemon", "Olive oil"] },
+  { id: "l6", name: "Chickpea & Feta Bowl", tag: "Lunch", glyc: "Low GI",
+    why: "Plant protein and fiber for steady afternoons.",
+    items: ["Chickpeas", "Feta cheese", "Cucumber", "Cherry tomatoes", "Olives", "Olive oil", "Oregano"] },
+  { id: "l7", name: "Turkey & Avocado Wrap", tag: "Lunch", glyc: "Med GI",
+    why: "Whole-grain wrap with lean protein and good fats.",
+    items: ["Whole-grain tortilla", "Turkey breast", "Avocado", "Lettuce", "Tomato", "Mustard"] },
+  { id: "l8", name: "Quinoa Tabbouleh & Grilled Halloumi", tag: "Lunch", glyc: "Low GI",
+    why: "Herby, filling, and blood-sugar friendly.",
+    items: ["Quinoa", "Parsley", "Mint", "Tomato", "Cucumber", "Halloumi", "Lemon", "Olive oil"] },
+  { id: "l9", name: "Asian Chicken Slaw", tag: "Lunch", glyc: "Low GI",
+    why: "Crunchy non-starchy veg with lean protein.",
+    items: ["Chicken breast", "Red cabbage", "Carrots", "Edamame", "Sesame oil", "Rice vinegar", "Ginger"] },
+  { id: "l10", name: "Mediterranean Salmon Salad", tag: "Lunch", glyc: "Low GI",
+    why: "Omega-3s plus loads of greens.",
+    items: ["Salmon fillet", "Mixed greens", "Cucumber", "Olives", "Feta cheese", "Lemon", "Olive oil"] },
+
+  /* ---------------- DINNER ---------------- */
   { id: "m5", name: "Salmon, Greens & Sweet Potato", tag: "Dinner", glyc: "Med GI",
     why: "Omega-3s help insulin sensitivity.",
     items: ["Salmon fillet", "Sweet potato", "Asparagus", "Olive oil", "Lemon", "Black pepper"] },
@@ -92,38 +133,216 @@ const MEALS = [
   { id: "m7", name: "Tofu & Veggie Stir-Fry", tag: "Dinner", glyc: "Low GI",
     why: "Plant protein with loads of non-starchy veg.",
     items: ["Firm tofu", "Broccoli", "Snap peas", "Carrots", "Ginger", "Soy sauce (low sodium)", "Sesame oil"] },
+  { id: "d8", name: "Baked Cod & Roasted Veg", tag: "Dinner", glyc: "Low GI",
+    why: "Lean white fish with fiber-rich vegetables.",
+    items: ["Cod fillet", "Zucchini", "Bell pepper", "Cherry tomatoes", "Olive oil", "Garlic", "Thyme"] },
+  { id: "d9", name: "Chicken & Cauliflower Rice Bowl", tag: "Dinner", glyc: "Low GI",
+    why: "Cauliflower rice keeps carbs and glucose low.",
+    items: ["Chicken thighs", "Cauliflower rice", "Broccoli", "Garlic", "Olive oil", "Paprika"] },
+  { id: "d10", name: "Shrimp & Zucchini Noodles", tag: "Dinner", glyc: "Low GI",
+    why: "Light, high-protein, very low glycemic load.",
+    items: ["Shrimp", "Zucchini", "Cherry tomatoes", "Garlic", "Olive oil", "Basil", "Lemon"] },
+  { id: "d11", name: "Beef & Broccoli (lean)", tag: "Dinner", glyc: "Low GI",
+    why: "Lean beef with non-starchy greens for satiety.",
+    items: ["Lean beef strips", "Broccoli", "Garlic", "Ginger", "Soy sauce (low sodium)", "Sesame oil"] },
+  { id: "d12", name: "Stuffed Bell Peppers", tag: "Dinner", glyc: "Low GI",
+    why: "Lean meat and beans baked in sweet peppers.",
+    items: ["Bell peppers", "Ground turkey", "Black beans", "Onion", "Canned tomatoes", "Cumin"] },
+  { id: "d13", name: "Eggplant & Chickpea Curry", tag: "Dinner", glyc: "Low GI",
+    why: "Fiber-rich, plant-based, and deeply satisfying.",
+    items: ["Eggplant", "Chickpeas", "Canned tomatoes", "Onion", "Garlic", "Curry powder", "Coconut milk (light)"] },
+
+  /* ---------------- SNACK ---------------- */
   { id: "m8", name: "Apple & Almond Butter", tag: "Snack", glyc: "Low GI",
     why: "Healthy fat blunts the sugar from the fruit.",
     items: ["Apple", "Almond butter"] },
   { id: "m9", name: "Hummus & Veggie Sticks", tag: "Snack", glyc: "Low GI",
     why: "Crunchy, satisfying, blood-sugar friendly.",
     items: ["Hummus", "Carrots", "Cucumber", "Celery"] },
+  { id: "s10", name: "Greek Yogurt & Walnuts", tag: "Snack", glyc: "Low GI",
+    why: "Protein and good fats to bridge meals.",
+    items: ["Plain Greek yogurt", "Walnuts", "Cinnamon"] },
+  { id: "s11", name: "Hard-Boiled Eggs & Cherry Tomatoes", tag: "Snack", glyc: "Low GI",
+    why: "Portable protein with almost no carbs.",
+    items: ["Eggs", "Cherry tomatoes", "Salt", "Black pepper"] },
+  { id: "s12", name: "Edamame", tag: "Snack", glyc: "Low GI",
+    why: "Plant protein and fiber in one handful.",
+    items: ["Edamame", "Sea salt"] },
+  { id: "s13", name: "Cheese & Almonds", tag: "Snack", glyc: "Low GI",
+    why: "Fat + protein keep hunger and glucose steady.",
+    items: ["Cheese", "Almonds"] },
+  { id: "s14", name: "Cottage Cheese & Berries", tag: "Snack", glyc: "Low GI",
+    why: "High-protein with a little natural sweetness.",
+    items: ["Cottage cheese", "Mixed berries"] },
+  { id: "s15", name: "Celery & Peanut Butter", tag: "Snack", glyc: "Low GI",
+    why: "Crunchy fiber with satisfying healthy fat.",
+    items: ["Celery", "Peanut butter"] },
+
+  /* ---------------- SHAKES (shown only when toggle is on) ---------------- */
+  { id: "sk1", name: "AG1 Greens Shake", tag: "Breakfast", glyc: "Low GI", shake: true,
+    why: "A quick greens + vitamins start when mornings are busy.",
+    items: ["AG1 scoop", "Cold water or unsweetened almond milk"] },
+  { id: "sk2", name: "Huel Complete Shake", tag: "Snack", glyc: "Low GI", shake: true,
+    why: "A balanced meal-replacement when you're on the go.",
+    items: ["Huel powder", "Water", "Ice"] },
+  { id: "sk3", name: "Huel Black Edition Shake", tag: "Lunch", glyc: "Low GI", shake: true,
+    why: "Higher-protein, lower-carb meal replacement.",
+    items: ["Huel Black powder", "Water", "Ice"] },
+  { id: "sk4", name: "Protein & Greens Smoothie", tag: "Breakfast", glyc: "Low GI", shake: true,
+    why: "Homemade shake: protein, greens, and good fats.",
+    items: ["Protein powder", "Spinach", "Unsweetened almond milk", "Nut butter", "Ice"] },
 ];
 
-/* ------------------------- EXERCISE PLAN -------------------------- */
-const WORKOUTS = [
-  { day: "Mon", title: "Brisk Walk + Core", focus: "Cardio", mins: 30, icon: Footprints,
-    moves: ["20 min brisk walk", "2× 30s plank", "2× 15 dead bugs", "2× 20 glute bridges"] },
-  { day: "Tue", title: "Full-Body Strength", focus: "Strength", mins: 35, icon: Dumbbell,
-    moves: ["3× 10 squats", "3× 8 push-ups (knees ok)", "3× 10 dumbbell rows", "3× 12 lunges"] },
-  { day: "Wed", title: "Recovery Walk + Stretch", focus: "Mobility", mins: 25, icon: Leaf,
-    moves: ["25 min easy walk", "Full-body stretch flow", "Deep breathing 5 min"] },
-  { day: "Thu", title: "Intervals", focus: "Cardio", mins: 25, icon: Flame,
-    moves: ["5 min warm-up", "8× (30s fast / 90s easy)", "5 min cool-down"] },
-  { day: "Fri", title: "Full-Body Strength", focus: "Strength", mins: 35, icon: Dumbbell,
-    moves: ["3× 10 goblet squats", "3× 10 shoulder press", "3× 30s plank", "3× 12 step-ups"] },
-  { day: "Sat", title: "Long Walk / Hike", focus: "Cardio", mins: 45, icon: Footprints,
-    moves: ["45 min walk, hike, or bike", "Aim for fresh air + nature"] },
-  { day: "Sun", title: "Rest & Restore", focus: "Rest", mins: 15, icon: HeartPulse,
-    moves: ["Gentle stretching", "Meal prep for the week", "Plan & celebrate wins"] },
+const SHAKE_SLOTS = ["Breakfast", "Lunch", "Snack"]; // where a shake can land
+
+/* ------------------------- EXERCISE PLANS -------------------------- */
+/* Three variants per day, chosen by the user's equipment:
+   "bodyweight" (no gear), "home" (dumbbells/bands), "gym" (full access). */
+const EQUIPMENT_OPTIONS = [
+  { id: "dumbbells", label: "Dumbbells" },
+  { id: "bands", label: "Resistance bands" },
+  { id: "kettlebell", label: "Kettlebell" },
+  { id: "pullup", label: "Pull-up bar" },
+  { id: "bench", label: "Bench" },
+  { id: "bike", label: "Bike / cardio machine" },
 ];
+
+const WORKOUTS_BY_SETUP = {
+  bodyweight: [
+    { day: "Mon", title: "Walk + Core", focus: "Cardio", mins: 30, icon: Footprints,
+      moves: ["20 min brisk walk", "3× 30s plank", "2× 15 dead bugs", "2× 20 glute bridges"] },
+    { day: "Tue", title: "Bodyweight Strength", focus: "Strength", mins: 30, icon: Dumbbell,
+      moves: ["3× 12 squats", "3× 8 push-ups (knees ok)", "3× 12 reverse lunges", "3× 30s wall sit"] },
+    { day: "Wed", title: "Recovery Walk + Stretch", focus: "Mobility", mins: 25, icon: Leaf,
+      moves: ["25 min easy walk", "Full-body stretch flow", "5 min deep breathing"] },
+    { day: "Thu", title: "Cardio Intervals", focus: "Cardio", mins: 25, icon: Flame,
+      moves: ["5 min warm-up", "8× (30s fast walk-jog / 90s easy)", "5 min cool-down"] },
+    { day: "Fri", title: "Bodyweight Circuit", focus: "Strength", mins: 30, icon: Dumbbell,
+      moves: ["3 rounds:", "15 squats", "10 incline push-ups", "20 step-ups", "30s plank"] },
+    { day: "Sat", title: "Long Walk / Hike", focus: "Cardio", mins: 45, icon: Footprints,
+      moves: ["45 min walk, hike, or bike", "Fresh air + nature"] },
+    { day: "Sun", title: "Rest & Restore", focus: "Rest", mins: 15, icon: HeartPulse,
+      moves: ["Gentle stretching", "Meal prep for the week", "Plan & celebrate wins"] },
+  ],
+  home: [
+    { day: "Mon", title: "Walk + Core", focus: "Cardio", mins: 30, icon: Footprints,
+      moves: ["20 min brisk walk", "3× 40s plank", "3× 15 dead bugs", "3× 20 glute bridges"] },
+    { day: "Tue", title: "Dumbbell Upper Body", focus: "Strength", mins: 35, icon: Dumbbell,
+      moves: ["3× 10 dumbbell press", "3× 10 rows", "3× 12 shoulder press", "3× 12 bicep curls"] },
+    { day: "Wed", title: "Recovery Walk + Stretch", focus: "Mobility", mins: 25, icon: Leaf,
+      moves: ["25 min easy walk", "Band shoulder mobility", "5 min deep breathing"] },
+    { day: "Thu", title: "Cardio + Bands", focus: "Cardio", mins: 30, icon: Flame,
+      moves: ["5 min warm-up", "8× (30s fast / 90s easy)", "3× 15 band pull-aparts"] },
+    { day: "Fri", title: "Dumbbell Lower Body", focus: "Strength", mins: 35, icon: Dumbbell,
+      moves: ["3× 10 goblet squats", "3× 10 dumbbell RDLs", "3× 12 lunges", "3× 15 calf raises"] },
+    { day: "Sat", title: "Long Walk / Hike", focus: "Cardio", mins: 45, icon: Footprints,
+      moves: ["45 min walk, hike, or bike", "Optional band circuit"] },
+    { day: "Sun", title: "Rest & Restore", focus: "Rest", mins: 15, icon: HeartPulse,
+      moves: ["Gentle stretching", "Meal prep for the week", "Plan & celebrate wins"] },
+  ],
+  gym: [
+    { day: "Mon", title: "Cardio + Core", focus: "Cardio", mins: 35, icon: Footprints,
+      moves: ["25 min incline treadmill / bike", "3× 45s plank", "3× 15 cable crunches"] },
+    { day: "Tue", title: "Push Day", focus: "Strength", mins: 45, icon: Dumbbell,
+      moves: ["3× 10 chest press", "3× 10 shoulder press", "3× 12 incline DB press", "3× 12 triceps pushdown"] },
+    { day: "Wed", title: "Recovery + Mobility", focus: "Mobility", mins: 30, icon: Leaf,
+      moves: ["20 min easy cardio", "Foam rolling", "Full-body stretch", "5 min breathing"] },
+    { day: "Thu", title: "Intervals (Machine)", focus: "Cardio", mins: 30, icon: Flame,
+      moves: ["5 min warm-up", "10× (30s hard / 90s easy) bike or rower", "5 min cool-down"] },
+    { day: "Fri", title: "Pull + Legs", focus: "Strength", mins: 45, icon: Dumbbell,
+      moves: ["3× 10 lat pulldown", "3× 10 seated row", "3× 10 leg press", "3× 12 leg curl", "3× 15 calf raise"] },
+    { day: "Sat", title: "Long Cardio / Class", focus: "Cardio", mins: 45, icon: Footprints,
+      moves: ["45 min walk, hike, bike, or a class", "Keep it enjoyable"] },
+    { day: "Sun", title: "Rest & Restore", focus: "Rest", mins: 15, icon: HeartPulse,
+      moves: ["Gentle stretching", "Meal prep for the week", "Plan & celebrate wins"] },
+  ],
+};
+
+// Pick the active plan from the user's profile
+const planFor = (profile) => {
+  if (profile?.gym) return WORKOUTS_BY_SETUP.gym;
+  const gear = profile?.equipment || [];
+  const hasStrengthGear = gear.some((g) => ["dumbbells", "bands", "kettlebell"].includes(g));
+  return hasStrengthGear ? WORKOUTS_BY_SETUP.home : WORKOUTS_BY_SETUP.bodyweight;
+};
+
+/* ---- PROGRESSION ENGINE -------------------------------------------
+   3 build weeks then 1 genuinely-easy deload. The ceiling rises gently
+   for ~2 months (2 cycles) then plateaus, so it never escalates forever.
+   Returns scaling info for any given date relative to the program start. */
+const CYCLE_CAP = 2; // plateau after ~2 cycles (~8 weeks)
+function weekInfo(profile, dateStr) {
+  const start = profile?.startedAt ? new Date(profile.startedAt + "T00:00") : new Date();
+  start.setHours(0, 0, 0, 0);
+  const day = new Date((dateStr || todayStr()) + "T00:00");
+  const weeksSince = Math.max(0, Math.floor((day - start) / (7 * 86400000)));
+  const cycle = Math.floor(weeksSince / 4);
+  const wk = weeksSince % 4;            // 0,1,2 = build · 3 = deload
+  const base = Math.min(cycle, CYCLE_CAP);
+  const isDeload = wk === 3;
+  const level = isDeload ? Math.max(0, base - 1) : base + wk;
+  const timeFactor = isDeload ? 0.85 : Math.min(1 + 0.06 * level, 1.24);
+  const repNote = isDeload
+    ? "Deload week — go lighter: drop a set and keep an easy pace. Recovery is where you get stronger. 🌿"
+    : level === 0
+      ? "Week 1 pace — follow the moves as written and focus on good form."
+      : `Step it up: add ${Math.min(level * 2, 6)} reps per set (or +1 set on the main lifts).`;
+  return {
+    weeksSince, cycle, wk, level, isDeload, timeFactor, repNote,
+    phase: isDeload ? "Deload week" : `Build week ${wk + 1} of 3`,
+    weekLabel: `Week ${weeksSince + 1}`,
+    capped: cycle >= CYCLE_CAP,
+  };
+}
+const scaledMins = (mins, info) => Math.round(mins * info.timeFactor);
 
 const focusColor = (f) =>
   ({ Cardio: C.coral, Strength: C.sage, Mobility: C.sky, Rest: C.sun }[f] || C.sage);
 
+/* ------------------------- AFFIRMATIONS --------------------------- */
+const AFFIRMATIONS = [
+  "I am becoming healthier every single day.",
+  "My body is strong, capable, and worth caring for.",
+  "Small steps today create big changes tomorrow.",
+  "I choose foods that help me feel my best.",
+  "I am proud of the progress I'm making.",
+  "I deserve to feel good in my own body.",
+  "Every healthy choice is a gift to my future self.",
+  "I am patient and kind with myself on this journey.",
+  "My energy grows as I take care of myself.",
+  "I am in control of my habits and my health.",
+  "Today I move my body with gratitude.",
+  "I drink water and nourish myself with love.",
+  "Rest is part of my strength, not a weakness.",
+  "I celebrate how far I've already come.",
+  "I am calm, focused, and ready for today.",
+  "My cravings pass; my goals remain.",
+  "I trust myself to make good choices.",
+  "Each breath brings me peace and clarity.",
+  "I am worthy of health, joy, and vitality.",
+  "Progress, not perfection, is my path.",
+  "I show up for myself, one day at a time.",
+  "My future self is thanking me right now.",
+  "I release stress and welcome calm.",
+  "I am stronger than my excuses.",
+  "Healthy is something I get to be, not have to be.",
+  "I honor my body with movement and rest.",
+  "I am exactly where I need to be today.",
+  "Every glass of water is a small act of self-love.",
+  "I greet today with energy and optimism.",
+  "I am the author of my own well-being.",
+];
+
+// deterministic shuffle from a seed so each day is stable but varied
+const pickFive = (seed) => {
+  const arr = AFFIRMATIONS.map((t, i) => ({ t, r: Math.sin(seed * 9301 + i * 49297) }));
+  arr.sort((a, b) => a.r - b.r);
+  return arr.slice(0, 5).map((x) => x.t);
+};
+
 /* ------------------------- DEFAULT STATE -------------------------- */
 const DEFAULT = {
-  profile: { name: "", start: 200, current: 200, goalPct: 20 },
+  profile: { name: "", start: 200, current: 200, goalPct: 20, gym: false, equipment: [], startedAt: "" },
   weightLog: [],
   alcohol: {},
   glucose: [],
@@ -133,6 +352,7 @@ const DEFAULT = {
   checked: {},
   meditationLog: {},
   bellOn: true,
+  shakesOn: false,
   dayPlans: {}, // { 'YYYY-MM-DD': { meals: {...}, notes: "" } }
 };
 
@@ -193,6 +413,7 @@ export default function App() {
         {tab === "move" && <MoveTab data={data} save={save} />}
         {tab === "calm" && <CalmTab data={data} save={save} />}
         {tab === "plan" && <PlanTab data={data} save={save} />}
+        {tab === "feels" && <FeelsTab data={data} save={save} />}
       </div>
       <NavBar tab={tab} setTab={setTab} />
       {showSetup && <Setup data={data} save={save} close={() => setShowSetup(false)} />}
@@ -242,7 +463,7 @@ function HomeTab({ data, save, setTab, openSetup }) {
 
   const dryToday = !(data.alcohol[todayStr()] > 0);
   const waterToday = data.water[todayStr()] || 0;
-  const workoutToday = WORKOUTS[(new Date().getDay() + 6) % 7];
+  const workoutToday = planFor(data.profile)[(new Date().getDay() + 6) % 7];
   const wkey = todayStr() + "-" + workoutToday.day;
   const workoutDone = !!data.workoutsDone[wkey];
 
@@ -487,7 +708,35 @@ function WaterCard({ data, save }) {
 /* ---------------------------- MEALS ------------------------------ */
 function MealsTab({ data, save }) {
   const slots = ["Breakfast", "Lunch", "Dinner", "Snack"];
+  const shakesOn = !!data.shakesOn;
+
   const setMeal = (slot, id) => save({ ...data, meals: { ...data.meals, [slot]: id } });
+
+  // does the current plan already include a shake somewhere today?
+  const hasShakeToday = slots.some((s) => MEALS.find((m) => m.id === data.meals[s])?.shake);
+
+  const toggleShakes = () => {
+    const on = !shakesOn;
+    let meals = { ...data.meals };
+    if (on && !slots.some((s) => MEALS.find((m) => m.id === meals[s])?.shake)) {
+      // turning on: drop a shake into the first sensible slot so there's at least one a day
+      for (const slot of SHAKE_SLOTS) {
+        const shake = MEALS.find((m) => m.shake && m.tag === slot);
+        if (shake) { meals[slot] = shake.id; break; }
+      }
+    }
+    if (!on) {
+      // turning off: replace any shake picks with a non-shake option in that slot
+      slots.forEach((slot) => {
+        const cur = MEALS.find((m) => m.id === meals[slot]);
+        if (cur?.shake) {
+          const alt = MEALS.find((m) => m.tag === slot && !m.shake);
+          if (alt) meals[slot] = alt.id;
+        }
+      });
+    }
+    save({ ...data, shakesOn: on, meals });
+  };
 
   const shoppingItems = useMemo(() => {
     const set = new Set();
@@ -502,28 +751,48 @@ function MealsTab({ data, save }) {
 
   return (
     <>
+      {/* shake toggle */}
+      <Card style={{ background: `linear-gradient(135deg,${C.card2},${C.card})` }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 15, fontWeight: 700 }}>Meal-replacement shakes</div>
+            <div style={{ fontSize: 12.5, color: C.mute, marginTop: 2 }}>
+              Include shakes like AG1 or Huel as options — we'll keep at least one in your day.
+            </div>
+          </div>
+          <Switch on={shakesOn} onClick={toggleShakes} />
+        </div>
+      </Card>
+
       {slots.map((slot) => {
         const meal = MEALS.find((m) => m.id === data.meals[slot]);
-        const options = MEALS.filter((m) => m.tag === slot);
+        const options = MEALS.filter((m) => m.tag === slot && (shakesOn || !m.shake));
         return (
           <Card key={slot}>
             <SectionTitle icon={UtensilsCrossed}>{slot}</SectionTitle>
             <div style={{ fontFamily: "Georgia,serif", fontSize: 19 }}>{meal?.name}</div>
-            <div style={{ display: "flex", gap: 8, margin: "8px 0" }}>
+            <div style={{ display: "flex", gap: 8, margin: "8px 0", flexWrap: "wrap" }}>
               <Pill color={C.sageDeep}>{meal?.glyc}</Pill>
+              {meal?.shake && <Pill color={C.sky}>Shake</Pill>}
             </div>
             <div style={{ color: C.mute, fontSize: 13, marginBottom: 12 }}>{meal?.why}</div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {options.map((o) => (
                 <button key={o.id} onClick={() => setMeal(slot, o.id)} style={{
                   ...chipBtn, borderColor: o.id === meal?.id ? C.sage : C.line,
-                  color: o.id === meal?.id ? C.sage : C.mute,
-                }}>{o.name.split(" ").slice(0, 2).join(" ")}</button>
+                  color: o.id === meal?.id ? C.sage : (o.shake ? C.sky : C.mute),
+                }}>{o.shake ? "🥤 " : ""}{o.name.split(" ").slice(0, 2).join(" ")}</button>
               ))}
             </div>
           </Card>
         );
       })}
+
+      {shakesOn && !hasShakeToday && (
+        <div style={{ fontSize: 12, color: C.sun, textAlign: "center", marginBottom: 14 }}>
+          Tip: pick a 🥤 shake in any slot to include one today.
+        </div>
+      )}
 
       <Card style={{ background: `linear-gradient(135deg,${C.card2},${C.card})` }}>
         <SectionTitle icon={ShoppingCart} color={C.sun}>Shopping List</SectionTitle>
@@ -547,29 +816,102 @@ const Pill = ({ children, color }) => (
   <span style={{ background: color + "33", color, fontSize: 11, fontWeight: 700, padding: "4px 10px", borderRadius: 20, letterSpacing: .5 }}>{children}</span>
 );
 
+/* a small iOS-style toggle switch */
+const Switch = ({ on, onClick }) => (
+  <button onClick={onClick} style={{
+    width: 52, height: 30, borderRadius: 20, border: "none", cursor: "pointer", flexShrink: 0,
+    background: on ? C.sageDeep : C.line, position: "relative", transition: "background .2s",
+  }}>
+    <span style={{
+      position: "absolute", top: 3, left: on ? 25 : 3, width: 24, height: 24, borderRadius: "50%",
+      background: "#fff", transition: "left .2s",
+    }} />
+  </button>
+);
+
 /* ----------------------------- MOVE ------------------------------ */
 function MoveTab({ data, save }) {
   const todayIdx = (new Date().getDay() + 6) % 7;
+  const plan = planFor(data.profile);
   const toggle = (day) => {
     const key = todayStr() + "-" + day;
     save({ ...data, workoutsDone: { ...data.workoutsDone, [key]: !data.workoutsDone[key] } });
   };
-  const doneCount = WORKOUTS.filter((w) => data.workoutsDone[todayStr() + "-" + w.day]).length;
+  const doneCount = plan.filter((w) => data.workoutsDone[todayStr() + "-" + w.day]).length;
+
+  const setGym = (gym) => save({ ...data, profile: { ...data.profile, gym } });
+  const toggleGear = (id) => {
+    const cur = data.profile.equipment || [];
+    const next = cur.includes(id) ? cur.filter((g) => g !== id) : [...cur, id];
+    save({ ...data, profile: { ...data.profile, equipment: next } });
+  };
+  const gym = !!data.profile.gym;
+  const gear = data.profile.equipment || [];
+  const setupName = gym ? "Gym" : (gear.some((g) => ["dumbbells", "bands", "kettlebell"].includes(g)) ? "Home gym" : "Bodyweight");
+  const info = weekInfo(data.profile);
 
   return (
     <>
       <Card style={{ background: `linear-gradient(135deg,#2a221c,${C.card})` }}>
         <SectionTitle icon={Dumbbell} color={C.coral}>Your Weekly Plan</SectionTitle>
         <div style={{ color: C.mute, fontSize: 14 }}>
-          A balanced mix of cardio, strength, and recovery — designed to burn fat,
-          build muscle, and boost insulin sensitivity.
+          A balanced mix of cardio, strength, and recovery — adapted to your setup
+          (<span style={{ color: C.sage }}>{setupName}</span>).
         </div>
         <div style={{ marginTop: 12, fontSize: 13, color: C.sun }}>
           {doneCount} workout{doneCount === 1 ? "" : "s"} completed today's check-ins ✨
         </div>
       </Card>
 
-      {WORKOUTS.map((w, i) => {
+      {/* progression banner */}
+      <Card style={{ borderColor: info.isDeload ? C.sky : C.line }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+          <span style={{ fontSize: 15, fontWeight: 700 }}>{info.weekLabel}</span>
+          <Pill color={info.isDeload ? C.sky : C.sageDeep}>{info.phase}</Pill>
+        </div>
+        <div style={{ fontSize: 13, color: info.isDeload ? C.sky : C.cream, lineHeight: 1.45 }}>{info.repNote}</div>
+        {info.capped && !info.isDeload && (
+          <div style={{ fontSize: 11, color: C.mute, marginTop: 8 }}>
+            You've reached a strong, steady level — we hold here to keep it sustainable. 💪
+          </div>
+        )}
+      </Card>
+
+      {/* equipment chooser */}
+      <Card>
+        <SectionTitle icon={Dumbbell} color={C.sky}>Where do you train?</SectionTitle>
+        <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+          <button onClick={() => setGym(true)} style={{
+            ...chipBtn, flex: 1, padding: "10px", fontSize: 13,
+            borderColor: gym ? C.sage : C.line, color: gym ? C.sage : C.mute,
+          }}>🏋️ Gym membership</button>
+          <button onClick={() => setGym(false)} style={{
+            ...chipBtn, flex: 1, padding: "10px", fontSize: 13,
+            borderColor: !gym ? C.sage : C.line, color: !gym ? C.sage : C.mute,
+          }}>🏠 Working out at home</button>
+        </div>
+        {!gym && (
+          <>
+            <div style={{ fontSize: 12, color: C.mute, marginBottom: 8 }}>What gear do you have? (tap any)</div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {EQUIPMENT_OPTIONS.map((e) => {
+                const on = gear.includes(e.id);
+                return (
+                  <button key={e.id} onClick={() => toggleGear(e.id)} style={{
+                    ...chipBtn, padding: "7px 12px",
+                    borderColor: on ? C.sage : C.line, color: on ? C.sage : C.mute,
+                  }}>{on ? "✓ " : ""}{e.label}</button>
+                );
+              })}
+            </div>
+            <div style={{ fontSize: 11, color: C.mute, marginTop: 10, lineHeight: 1.5 }}>
+              No gear selected = a great bodyweight plan. Add dumbbells, bands, or a kettlebell to unlock loaded strength days.
+            </div>
+          </>
+        )}
+      </Card>
+
+      {plan.map((w, i) => {
         const Ic = w.icon;
         const done = !!data.workoutsDone[todayStr() + "-" + w.day];
         const isToday = i === todayIdx;
@@ -582,7 +924,7 @@ function MoveTab({ data, save }) {
                 <Ic size={22} color={col} />
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 12, color: C.mute }}>{w.day} · {w.mins} min</div>
+                <div style={{ fontSize: 12, color: C.mute }}>{w.day} · {scaledMins(w.mins, info)} min</div>
                 <div style={{ fontFamily: "Georgia,serif", fontSize: 18 }}>{w.title}</div>
               </div>
             </div>
@@ -741,10 +1083,10 @@ const DOW = ["S", "M", "T", "W", "T", "F", "S"];
 const keyOf = (y, m, d) =>
   `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 
-// workout for a given Date (Mon-indexed week)
-const workoutForKey = (k) => {
+// workout for a given Date (Mon-indexed week), adapted to the user's setup
+const workoutForKey = (k, profile) => {
   const dt = new Date(k + "T00:00");
-  return WORKOUTS[(dt.getDay() + 6) % 7];
+  return planFor(profile)[(dt.getDay() + 6) % 7];
 };
 const mealsForKey = (data, k) => (data.dayPlans?.[k]?.meals) || data.meals;
 
@@ -795,7 +1137,7 @@ function PlanTab({ data, save }) {
           {cells.map((d, i) => {
             if (!d) return <div key={i} />;
             const k = keyOf(ym.y, ym.m, d);
-            const w = workoutForKey(k);
+            const w = workoutForKey(k, data.profile);
             const isToday = k === todayKey;
             const hasNotes = !!data.dayPlans?.[k]?.notes;
             const col = focusColor(w.focus);
@@ -841,7 +1183,8 @@ function DayDetail({ data, save, dayKey, close }) {
   const notesRef = useRef(null);
   const dt = new Date(dayKey + "T00:00");
   const pretty = dt.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
-  const w = workoutForKey(dayKey);
+  const w = workoutForKey(dayKey, data.profile);
+  const info = weekInfo(data.profile, dayKey);
   const Ic = w.icon;
   const col = focusColor(w.focus);
   const slots = ["Breakfast", "Lunch", "Dinner", "Snack"];
@@ -877,10 +1220,14 @@ function DayDetail({ data, save, dayKey, close }) {
               <Ic size={18} color={col} />
             </div>
             <div>
-              <div style={{ fontSize: 11, color: C.mute }}>{w.day} · {w.mins} min · {w.focus}</div>
+              <div style={{ fontSize: 11, color: C.mute }}>{w.day} · {scaledMins(w.mins, info)} min · {w.focus}</div>
               <div style={{ fontWeight: 700 }}>{w.title}</div>
             </div>
           </div>
+          <div style={{ marginBottom: 8 }}>
+            <Pill color={info.isDeload ? C.sky : C.sageDeep}>{info.weekLabel} · {info.phase}</Pill>
+          </div>
+          <div style={{ fontSize: 12, color: info.isDeload ? C.sky : C.mute, marginBottom: 10, lineHeight: 1.4 }}>{info.repNote}</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 3, marginBottom: 10 }}>
             {w.moves.map((m, i) => (
               <div key={i} style={{ fontSize: 12.5, color: C.cream, display: "flex", gap: 7 }}>
@@ -897,7 +1244,7 @@ function DayDetail({ data, save, dayKey, close }) {
         {/* meals */}
         {slots.map((slot) => {
           const meal = MEALS.find((m) => m.id === dayMeals[slot]);
-          const options = MEALS.filter((m) => m.tag === slot);
+          const options = MEALS.filter((m) => m.tag === slot && (data.shakesOn || !m.shake));
           return (
             <div key={slot} style={{ marginBottom: 12 }}>
               <div style={{ fontSize: 11, color: C.mute, textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>{slot}</div>
@@ -929,6 +1276,46 @@ function DayDetail({ data, save, dayKey, close }) {
   );
 }
 
+/* ---------------------------- FEELS ------------------------------ */
+function FeelsTab({ data, save }) {
+  const today = todayStr();
+  const dayNum = Math.floor(new Date(today + "T00:00").getTime() / 86400000);
+  const feels = data.feels && data.feels.date === today ? data.feels : { date: today, n: 0 };
+  const seed = dayNum + feels.n * 7919;
+  const list = pickFive(seed);
+  const shuffle = () => save({ ...data, feels: { date: today, n: feels.n + 1 } });
+
+  const dateLabel = new Date(today + "T00:00").toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+
+  return (
+    <>
+      <Card style={{ background: `linear-gradient(135deg,#2e2718,${C.card})` }}>
+        <SectionTitle icon={Sun} color={C.sun}>Feels</SectionTitle>
+        <div style={{ color: C.mute, fontSize: 14 }}>
+          Five affirmations for {dateLabel}. Read them slowly, say them aloud, and let them land. 🌞
+        </div>
+      </Card>
+
+      {list.map((text, i) => (
+        <Card key={i} style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <div style={{
+            width: 30, height: 30, borderRadius: "50%", flexShrink: 0, display: "grid", placeItems: "center",
+            background: C.sun + "26", color: C.sun, fontFamily: "Georgia,serif", fontSize: 15, fontWeight: 700,
+          }}>{i + 1}</div>
+          <div style={{ fontFamily: "Georgia,serif", fontSize: 17, lineHeight: 1.35 }}>{text}</div>
+        </Card>
+      ))}
+
+      <button onClick={shuffle} style={{ ...primaryBtn, width: "100%", padding: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+        <Shuffle size={18} /> New set
+      </button>
+      <div style={{ fontSize: 11, color: C.mute, textAlign: "center", marginTop: 10, marginBottom: 4 }}>
+        A fresh set appears each day — tap for more anytime.
+      </div>
+    </>
+  );
+}
+
 /* ---------------------------- SETUP ------------------------------ */
 function Setup({ data, save, close }) {
   const nameRef = useRef(null);
@@ -946,7 +1333,7 @@ function Setup({ data, save, close }) {
     const s = parseFloat(startRef.current?.value) || 200;
     save({
       ...data,
-      profile: { ...data.profile, name: typedName, start: s, current: s, goalPct: 20 },
+      profile: { ...data.profile, name: typedName, start: s, current: s, goalPct: 20, startedAt: data.profile.startedAt || todayStr() },
     });
     close();
   };
@@ -992,12 +1379,13 @@ function NavBar({ tab, setTab }) {
     { id: "meals", icon: UtensilsCrossed, label: "Meals" },
     { id: "move", icon: Dumbbell, label: "Move" },
     { id: "plan", icon: CalendarDays, label: "Plan" },
+    { id: "feels", icon: Sun, label: "Feels" },
     { id: "calm", icon: Brain, label: "Calm" },
   ];
   return (
     <div style={{
       position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 440,
-      display: "flex", justifyContent: "space-around", padding: "9px 4px 22px",
+      display: "flex", justifyContent: "space-around", padding: "9px 2px 22px",
       background: "rgba(15,26,20,.92)", backdropFilter: "blur(12px)", borderTop: `1px solid ${C.line}`,
     }}>
       {items.map((it) => {
@@ -1005,10 +1393,10 @@ function NavBar({ tab, setTab }) {
         return (
           <button key={it.id} onClick={() => setTab(it.id)} style={{
             background: "none", border: "none", cursor: "pointer", display: "flex", flexDirection: "column",
-            alignItems: "center", gap: 3, color: active ? C.sage : C.mute, flex: 1, padding: "0 2px",
+            alignItems: "center", gap: 3, color: active ? C.sage : C.mute, flex: 1, padding: "0 1px", minWidth: 0,
           }}>
-            <Ic size={19} />
-            <span style={{ fontSize: 9, fontWeight: active ? 700 : 500, letterSpacing: .1 }}>{it.label}</span>
+            <Ic size={18} />
+            <span style={{ fontSize: 8.5, fontWeight: active ? 700 : 500, letterSpacing: 0 }}>{it.label}</span>
           </button>
         );
       })}
